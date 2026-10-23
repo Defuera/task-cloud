@@ -40,7 +40,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 ::selection { background: var(--accent); color: var(--bg); }
 .label, .btn, .eyebrow, legend, .meta, .zoom output, .legend { font-family: var(--font-mono); font-size: .7rem; letter-spacing: .07em; text-transform: uppercase; }
 
-.topbar { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 16px);
+.topbar { z-index: 11; position: fixed; top: calc(env(safe-area-inset-top, 0px) + 16px);
   left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
   display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; pointer-events: none; }
 .topbar > * { pointer-events: auto; }
@@ -48,6 +48,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .brand h1 { margin: 0; font-weight: 500; font-size: 17px; letter-spacing: -.02em; }
 .meta { color: var(--ink-subtle); font-variant-numeric: tabular-nums; }
 .tools { display: flex; gap: 0; }
+.corner { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); display: flex; gap: 8px; z-index: 7; }
+.fab { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--bg); color: var(--ink-muted);
+  font: 500 18px var(--font-mono); transition: border-color .15s, color .15s, box-shadow .15s; }
+.fab:hover, .fab[aria-expanded="true"] { color: var(--ink); border-color: var(--ink-subtle); }
+.fab.primary { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 35%, transparent); font-size: 24px; font-weight: 400; }
+.fab.primary span { display: block; transition: transform .2s cubic-bezier(.3,1.6,.5,1); }
+.fab.primary[aria-expanded="true"] span { transform: rotate(45deg); }
+.fab-menu { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 72px); z-index: 7;
+  display: grid; min-width: 220px; animation: slide .16s ease-out; }
+.fab-menu .btn { justify-content: space-between; padding: 12px 14px; }
+.fab-menu .btn + .btn { border-top: 1px solid var(--rule); }
 .tools .btn + .btn { border-left: 1px solid var(--rule); }
 .btn { border: 0; background: transparent; padding: 10px 14px; border-radius: 0; display: inline-flex; gap: 8px; align-items: center; color: var(--ink); min-height: 38px; }
 .btn:hover { background: var(--bg-alt); }
@@ -61,7 +72,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .zoom .btn { width: 38px; justify-content: center; padding: 0; font-size: 15px; }
 .zoom output { width: 56px; display: grid; place-items: center; color: var(--ink-subtle); font-variant-numeric: tabular-nums; border-inline: 1px solid var(--rule); }
 
-.legend { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+.legend { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 72px); z-index: 6;
   padding: 10px 14px; display: grid; gap: 8px; color: var(--ink-subtle); max-width: calc(100vw - 200px); }
 .legend .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
 .sw { display: inline-flex; align-items: center; gap: 6px; }
@@ -97,8 +108,19 @@ legend { padding: 0 0 8px; color: var(--ink-subtle); float: left; width: 100%; }
 #ed-proj button, #zone-proj button { flex: 1 1 auto; padding-inline: 10px; }
 #ed-proj-new, #zone-proj-new { width: 100%; border: 1px solid var(--rule); border-radius: var(--radius); background: transparent; color: var(--ink); padding: 7px 10px; font: 13px var(--font-sans); }
 #ed-proj-new::placeholder, #zone-proj-new::placeholder { color: var(--ink-subtle); }
-#projects .btn[aria-checked="true"] { color: var(--bg); background: var(--accent); }
-#projects { max-width: 100%; overflow-x: auto; }
+#visibility { align-items: stretch; }
+.vis-label { display: grid; place-items: center; padding: 0 12px; border-right: 1px solid var(--rule); }
+.dd { position: relative; display: flex; }
+.dd + .btn { border-left: 1px solid var(--rule); }
+#proj-btn { min-width: 150px; justify-content: space-between; }
+.caret { color: var(--ink-subtle); font-size: 10px; }
+.dd-list { position: absolute; top: calc(100% + 6px); left: 0; min-width: 220px; display: grid; z-index: 12; animation: slide .14s ease-out; }
+.dd-list .btn { justify-content: space-between; padding: 11px 14px; }
+.dd-list .btn + .btn { border-top: 1px solid var(--rule); }
+.dd-list .btn[aria-selected="true"] { color: var(--accent); }
+.dd-list .btn .n { color: var(--ink-subtle); font-variant-numeric: tabular-nums; }
+#show-done .box { width: 11px; height: 11px; border: 1px solid currentColor; border-radius: 2px; display: inline-grid; place-items: center; font-size: 9px; line-height: 1; }
+#show-done[aria-pressed="true"] .box::after { content: "✓"; }
 .check { display: flex; gap: 10px; align-items: center; color: var(--ink); }
 .check input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
 .deps { display: grid; gap: 10px; }
@@ -135,7 +157,7 @@ legend { padding: 0 0 8px; color: var(--ink-subtle); float: left; width: 100%; }
 
 @media (max-width: 640px) {
   .sheet { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); left: max(16px, env(safe-area-inset-left, 0px)); width: auto; max-height: 62vh; overflow: auto; }
-  .legend { display: none; }
+  .legend { max-width: calc(100vw - 32px); }
   .btn .k { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .sheet, .toast { animation: none; } }
@@ -145,15 +167,28 @@ legend { padding: 0 0 8px; color: var(--ink-subtle); float: left; width: 100%; }
 
 <header class="topbar">
   <div class="brand panel"><h1>Task Cloud</h1><span class="meta" id="meta">loading</span></div>
-  <div class="tools panel" id="projects" role="radiogroup" aria-label="Project"></div>
-  <div class="tools panel" role="toolbar" aria-label="Board tools">
-    <button class="btn primary" id="add" type="button">+ Add task <span class="k">N</span></button>
-    <button class="btn" id="add-zone" type="button" aria-pressed="false">+ Zone <span class="k">Z</span></button>
-    <button class="btn" id="connect" type="button" aria-pressed="false">Connect <span class="k">C</span></button>
-    <button class="btn" id="fit" type="button">Fit <span class="k">0</span></button>
-    <button class="btn" id="theme" type="button" aria-label="Switch theme">Light <span class="k">T</span></button>
+  <div class="tools panel" id="visibility" role="group" aria-label="What the board shows">
+    <span class="label vis-label">Show</span>
+    <div class="dd">
+      <button class="btn" id="proj-btn" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="proj-list"><span id="proj-label">All projects</span> <span class="caret">▾</span></button>
+      <div class="dd-list panel" id="proj-list" role="listbox" aria-label="Project" hidden></div>
+    </div>
+    <button class="btn" id="show-done" type="button" aria-pressed="false"><span class="box" aria-hidden="true"></span>Done tasks <span class="k">D</span></button>
   </div>
 </header>
+
+<div class="fab-menu panel" id="actions" role="menu" aria-label="Actions" hidden>
+  <button class="btn primary" id="add" type="button" role="menuitem">Add task <span class="k">N</span></button>
+  <button class="btn" id="add-zone" type="button" role="menuitem" aria-pressed="false">Draw zone <span class="k">Z</span></button>
+  <button class="btn" id="connect" type="button" role="menuitem" aria-pressed="false">Connect tasks <span class="k">C</span></button>
+  <button class="btn" id="fit" type="button" role="menuitem">Fit to screen <span class="k">0</span></button>
+  <button class="btn" id="theme" type="button" role="menuitem" aria-label="Switch theme">Light <span class="k">T</span></button>
+</div>
+
+<div class="corner">
+  <button class="fab" id="legend-btn" type="button" aria-expanded="false" aria-controls="legend" aria-label="Show legend">?</button>
+  <button class="fab primary" id="fab" type="button" aria-expanded="false" aria-controls="actions" aria-label="Show actions"><span>+</span></button>
+</div>
 
 <div class="zoom panel" role="group" aria-label="Zoom">
   <button class="btn" id="zout" type="button" aria-label="Zoom out">−</button>
@@ -161,7 +196,7 @@ legend { padding: 0 0 8px; color: var(--ink-subtle); float: left; width: 100%; }
   <button class="btn" id="zin" type="button" aria-label="Zoom in">+</button>
 </div>
 
-<div class="legend panel" aria-label="Legend">
+<div class="legend panel" id="legend" aria-label="Legend" hidden>
   <div class="row">
     <span class="sw"><i style="border-color:var(--p-high)"></i>High</span>
     <span class="sw"><i style="border-color:var(--p-mid)"></i>Middle</span>
@@ -170,8 +205,8 @@ legend { padding: 0 0 8px; color: var(--ink-subtle); float: left; width: 100%; }
     <span class="sw"><i style="border-color:var(--p-done)"></i>Done</span>
   </div>
   <div class="hint">Shape size = T-shirt size · Arrow A → B: B waits for A</div>
-  <div class="hint">Tap to select · Drag to move · ⌘-drag from a task to draw an arrow · Scroll to zoom</div>
-  <div class="hint">⌘-click a task or ⌘-drag on empty space to select many · Del removes · ⌘Z undo · ⇧⌘Z redo</div>
+  <div class="hint">Tap to select · Drag to move (linked tasks follow like a chain, ⌥-drag moves one) · ⌘-drag from a task to draw an arrow · Scroll to zoom</div>
+  <div class="hint">⌘-click a task or ⌘-drag on empty space to select many · Del removes · ⌘Z undo · ⇧⌘Z redo · D shows or hides done tasks</div>
   <div class="hint">Zones: Z then drag to draw · drag the name or the outline to move a zone · double-click the name to rename · drag the corner to resize</div>
 </div>
 
@@ -290,7 +325,10 @@ let selectedZoneId = null;
 let order = [];
 let selectedId = null, selectedLinkId = null, pendingLinkFrom = null, connectMode = false;
 let readOnly = false, mode = "loading", db = null;
-const FOCUS_KEY = "task-cloud-focus";
+const FOCUS_KEY = "task-cloud-focus", DONE_KEY = "task-cloud-show-done";
+let showDone = false; // done tasks are hidden unless the viewer turns them on
+try { showDone = localStorage.getItem(DONE_KEY) === "1"; } catch (e) {}
+const gone = (n) => n.hid > 0.5;
 let focus = null;
 try { focus = localStorage.getItem(FOCUS_KEY) || null; } catch (e) {}
 function projectList() {
@@ -306,7 +344,7 @@ function spiralPos(i) { const a = i * 2.39996, d = 110 * Math.sqrt(i + 0.6); ret
 function makeNode(id, d) {
   const p = (typeof d.x === "number" && typeof d.y === "number") ? { x: d.x, y: d.y } : spiralPos(nodes.size);
   return { id, title: "", priority: "Middle", size: "M", done: false, x: p.x, y: p.y, vx: 0, vy: 0, w: 60, h: 24, wv: 0, hv: 0, r: 12,
-    off: new Float32Array(N_BLOB), offv: new Float32Array(N_BLOB), samp: new Float32Array(N_BLOB * 4), shake: 0, shakePh: 0, flash: 0, pop: 0, dim: 0, project: "General", status: "todo", description: "",
+    off: new Float32Array(N_BLOB), offv: new Float32Array(N_BLOB), samp: new Float32Array(N_BLOB * 4), shake: 0, shakePh: 0, flash: 0, pop: 0, dim: 0, hid: 0, celeb: 0, project: "General", status: "todo", description: "",
     ph1: Math.random() * 6.28, ph2: Math.random() * 6.28,
     savedX: typeof d.x === "number" ? d.x : null, savedY: typeof d.y === "number" ? d.y : null, dragging: false };
 }
@@ -315,8 +353,10 @@ function setFields(n, d) {
   if (typeof d.description === "string") n.description = d.description.slice(0, 2000);
   if (PRIS.includes(d.priority)) n.priority = d.priority;
   if (SIZES[d.size]) { if (n.size !== d.size && n.pop > 0.5) poke(n, 0.12); n.size = d.size; }
+  const wasDone = n.done;
   if (STATUSES.includes(d.status)) { n.status = d.status; n.done = d.status === "done"; }
   else if (typeof d.done === "boolean") { n.done = d.done; n.status = d.done ? "done" : (n.status === "done" ? "todo" : n.status); }
+  if (!wasDone && n.done && n.pop > 0.9) celebrate(n);
   if (typeof d.project === "string" && d.project.trim()) n.project = d.project.trim().slice(0, 40);
 }
 function applyTask(id, d) {
@@ -498,6 +538,7 @@ let saveTimer = null;
 function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(savePositions, 1300); }
 function savePositions() {
   if (readOnly) return;
+  if (chain) return scheduleSave();
   for (const n of nodes.values()) if (n.dragging) return scheduleSave();
   for (const n of nodes.values()) {
     const x = Math.round(n.x), y = Math.round(n.y);
@@ -534,16 +575,39 @@ function poke(n, amt = 0.08) {
   for (let j = 0; j < 3; j++) squish(n, Math.random() * Math.PI * 2, amt * k * (0.6 + Math.random() * 0.6));
   n.wv += 6 * k; n.hv += 3 * k;
 }
+/* done pop: the shape swells and springs back, a ring spreads out and sparks fly from the check */
+const sparks = [];
+function celebrate(n) {
+  if (reduceMotion) { n.celeb = 0.3; return; }
+  n.celeb = 1; n.wv += 70; n.hv += 30; poke(n, 0.14);
+  const col = C[n.priority] || C.good, cx = n.x + n.w / 2 - 6, cy = n.y - n.h / 2 + 6;
+  for (let i = 0; i < 16; i++) {
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.6 + (i % 2 ? 0.6 : -0.6), v = 140 + Math.random() * 220;
+    sparks.push({ x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, col: i % 3 ? C.good : col, r: 1.6 + Math.random() * 1.8 });
+  }
+}
+function stepSparks(h) {
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const p = sparks[i]; p.vy += 420 * h; p.vx *= 0.97; p.vy *= 0.97; p.x += p.vx * h; p.y += p.vy * h; p.life -= h / 0.8;
+    if (p.life <= 0) sparks.splice(i, 1);
+  }
+}
+function drawSparks() {
+  for (const p of sparks) { ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (0.5 + p.life * 0.5), 0, Math.PI * 2); ctx.fill(); }
+  ctx.globalAlpha = 1;
+}
 function shakeNode(n) { if (!n) return; n.shake = reduceMotion ? 0.3 : 1; n.flash = 1; poke(n, 0.1); }
 
 let T = 0, linkDrag = null, marquee = null, hoverLinkId = null, hoverZoneId = null;
 const multi = new Set();
 function step(h) {
-  T += h;
+  T += h; stepSparks(h); stepChain(h);
   const arr = [...nodes.values()];
   for (const n of arr) {
     n.pop += (1 - n.pop) * 0.12;
     n.dim += ((focus && n.project !== focus ? 1 : 0) - n.dim) * 0.1;
+    n.hid += ((!showDone && n.done && n.id !== selectedId && !n.dragging && n.celeb < 0.05 ? 1 : 0) - n.hid) * 0.15;
+    if (n.celeb > 0) n.celeb = Math.max(0, n.celeb - h / 0.9);
     const [tw, th] = SIZES[n.size];
     n.wv += (tw - n.w) * 0.16; n.wv *= 0.74; n.w += n.wv; n.hv += (th - n.h) * 0.16; n.hv *= 0.74; n.h += n.hv; n.r = n.h / 2;
     sampleShape(n);
@@ -551,8 +615,9 @@ function step(h) {
       const nx = n.x + (n.tx - n.x) * 0.45, ny = n.y + (n.ty - n.y) * 0.45;
       n.vx = (nx - n.x) / h; n.vy = (ny - n.y) / h; n.x = nx; n.y = ny;
     } else {
-      n.vx *= 0.86; n.vy *= 0.86;
-      const sp = Math.hypot(n.vx, n.vy); if (sp > MAX_SPEED) { n.vx *= MAX_SPEED / sp; n.vy *= MAX_SPEED / sp; }
+      const chained = chain && chain.set.has(n.id), damp = chained ? 0.92 : 0.86, cap = chained ? 1400 : MAX_SPEED;
+      n.vx *= damp; n.vy *= damp;
+      const sp = Math.hypot(n.vx, n.vy); if (sp > cap) { n.vx *= cap / sp; n.vy *= cap / sp; }
       n.x += n.vx * h; n.y += n.vy * h;
     }
     n.shake *= 0.92; n.shakePh += h * 44; n.flash *= 0.95;
@@ -561,6 +626,7 @@ function step(h) {
   for (let pass = 0; pass < 2; pass++) {
     for (let i = 0; i < arr.length; i++) for (let j = i + 1; j < arr.length; j++) {
       const a = arr[i], b = arr[j];
+      if (gone(a) || gone(b)) continue;
       let dx = b.x - a.x; const dy = b.y - a.y;
       const ox = (a.w * sc(a) + b.w * sc(b)) / 2 + 14 - Math.abs(dx), oy = (a.h * sc(a) + b.h * sc(b)) / 2 + 14 - Math.abs(dy);
       if (ox <= 0 || oy <= 0) continue;
@@ -627,7 +693,7 @@ function zoomAt(sx, sy, f) {
 function fitView(instant) {
   if (!nodes.size) { cam.tx = 0; cam.ty = 0; cam.tz = 1; return; }
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  const pool = [...nodes.values()].filter((n) => !focus || n.project === focus);
+  const pool = [...nodes.values()].filter((n) => (!focus || n.project === focus) && (showDone || !n.done));
   for (const n of (pool.length ? pool : nodes.values())) { const [w, h] = SIZES[n.size]; x0 = Math.min(x0, n.x - w / 2); y0 = Math.min(y0, n.y - h / 2); x1 = Math.max(x1, n.x + w / 2); y1 = Math.max(y1, n.y + h / 2); }
   for (const z of zones.values()) if (!focus || !z.project || z.project === focus) { x0 = Math.min(x0, z.x); y0 = Math.min(y0, z.y - 24); x1 = Math.max(x1, z.x + z.w); y1 = Math.max(y1, z.y + z.h); }
   const padX = W < 640 ? 24 : 80, padTop = 90, padBot = W < 640 ? 90 : 110;
@@ -645,7 +711,7 @@ function showZoom() { const z = Math.round(cam.z * 100); if (z !== lastZ) { last
 
 /* ---------- drawing ---------- */
 const bob = (n) => reduceMotion ? { x: 0, y: 0 } : { x: Math.sin(T * 0.5 + n.ph1) * 5, y: Math.cos(T * 0.41 + n.ph2) * 7 };
-const sc = (n) => n.pop * (1 - 0.28 * n.dim);
+const sc = (n) => n.pop * (1 - 0.28 * n.dim) * (1 - 0.6 * n.hid);
 let FADE = 1;
 function renderPos(n) { const b = bob(n); return { x: n.x + b.x + Math.sin(n.shakePh) * n.shake * 10, y: n.y + b.y }; }
 function blobPath(n, cx, cy, extra = 0) {
@@ -690,11 +756,12 @@ function draw() {
   ctx.lineCap = "round"; ctx.lineJoin = "round";
   for (const l of links.values()) {
     const A = nodes.get(l.from), B = nodes.get(l.to); if (!A || !B || l.cx === null) continue;
+    const hidA = Math.max(A.hid, B.hid); if (hidA > 0.98) continue;
     const pa = renderPos(A), pb = renderPos(B);
     const s = edgePoint(A, pa, l.cx, l.cy, 6), e = edgePoint(B, pb, l.cx, l.cy, 9);
     const picked = l.id === selectedLinkId, hover = l.id === hoverLinkId;
     const hot = picked || hover || l.from === selectedId || l.to === selectedId;
-    ctx.globalAlpha = (A.done ? 0.35 : 1) * (1 - 0.8 * Math.max(A.dim, B.dim));
+    ctx.globalAlpha = (A.done ? 0.35 : 1) * (1 - 0.8 * Math.max(A.dim, B.dim)) * (1 - hidA);
     ctx.strokeStyle = hot ? C.lineHot : C.line; ctx.lineWidth = picked ? 2.6 : hot ? 1.6 : 1.2;
     if (picked) { ctx.save(); ctx.shadowColor = C.lineHot; ctx.shadowBlur = 14 * cam.z * DPR; }
     ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.quadraticCurveTo(l.cx, l.cy, e.x, e.y); ctx.stroke();
@@ -718,6 +785,7 @@ function draw() {
   const top = [];
   for (const id of order) { const n = nodes.get(id); if (!n) continue; if (n.dragging || id === selectedId) top.push(n); else drawNode(n); }
   top.forEach(drawNode);
+  drawSparks();
   if (marquee) {
     const x = Math.min(marquee.x0, marquee.x1), y = Math.min(marquee.y0, marquee.y1), w = Math.abs(marquee.x1 - marquee.x0), h = Math.abs(marquee.y1 - marquee.y0);
     ctx.globalAlpha = 0.08; ctx.fillStyle = C.lineHot; ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1;
@@ -758,7 +826,8 @@ function ring(n, p, extra, color, width, alpha, dash) {
   if (dash) ctx.setLineDash([]); ctx.globalAlpha = FADE;
 }
 function drawNode(n) {
-  FADE = 1 - 0.75 * n.dim; ctx.globalAlpha = FADE;
+  if (n.hid > 0.98) return;
+  FADE = (1 - 0.75 * n.dim) * (1 - n.hid); ctx.globalAlpha = FADE;
   drawNodeInner(n);
   FADE = 1; ctx.globalAlpha = 1;
 }
@@ -787,9 +856,13 @@ function drawNodeInner(n) {
   if (linkDrag && linkDrag.target === n.id) ring(n, p, 7, C.lineHot, 1.5, 1);
   if (n.flash > 0.03) { ctx.save(); ctx.shadowColor = C.err; ctx.shadowBlur = 18 * cam.z * DPR; ring(n, p, 3, C.err, 1.5, n.flash); ctx.restore(); }
   const hw = (n.w * sc(n)) / 2, hh = (n.h * sc(n)) / 2;
+  if (n.celeb > 0 && !reduceMotion) { // ring that spreads out from the border
+    const t = 1 - n.celeb; ring(n, p, 4 + t * 34, C.good, 2 * n.celeb, n.celeb * 0.8);
+  }
   if (n.done) { // a bare check centred on the rounded top-right corner of the border
     const rc = Math.min(16, n.h * 0.28) * sc(n), cx = p.x + hw - rc + rc * Math.SQRT1_2, cy = p.y - hh + rc - rc * Math.SQRT1_2;
-    const path = () => { ctx.beginPath(); ctx.moveTo(cx - 6, cy + 0.5); ctx.lineTo(cx - 1.8, cy + 4.5); ctx.lineTo(cx + 6.5, cy - 5); };
+    const t = 1 - n.celeb, k = n.celeb > 0 ? 1 + 2.7 * Math.pow(t - 1, 3) + 1.7 * Math.pow(t - 1, 2) : 1; // ease-out-back scale
+    const path = () => { ctx.beginPath(); ctx.moveTo(cx - 6 * k, cy + 0.5 * k); ctx.lineTo(cx - 1.8 * k, cy + 4.5 * k); ctx.lineTo(cx + 6.5 * k, cy - 5 * k); };
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     path(); ctx.strokeStyle = C.bg; ctx.lineWidth = 6; ctx.stroke();      // cut the border under the check
     path(); ctx.strokeStyle = C.good; ctx.lineWidth = 2.2; ctx.stroke();
@@ -803,7 +876,8 @@ function drawNodeInner(n) {
     ctx.globalAlpha = FADE; ctx.beginPath(); ctx.arc(cx, cy, 6, a0, a0 + Math.PI * 1.2); ctx.stroke();
   }
   if (hh < 14) return;
-  const pad = 13, fs = Math.max(11.5, Math.min(15, n.h * 0.18)), lh = fs * 1.22, bfs = Math.max(8.5, fs * 0.66);
+  const k = sc(n) / Math.max(0.01, n.pop), Hs = n.h * k; // text follows the drawn size, so faded and small tasks get smaller type
+  const pad = 13 * k, fs = Math.max(7.5, Math.min(15, Hs * 0.175)), lh = fs * 1.22, bfs = Math.max(6.5, fs * 0.66);
   const top = p.y - hh + pad * 0.85, by = p.y + hh - pad * 0.8;
   const maxLines = Math.max(2, Math.floor((by - bfs - 2 - top) / lh));
   if ("letterSpacing" in ctx) ctx.letterSpacing = (-fs * 0.015).toFixed(2) + "px";
@@ -827,6 +901,7 @@ function drawNodeInner(n) {
 function nodeAt(wx, wy, exclude) {
   for (let i = order.length - 1; i >= 0; i--) {
     const n = nodes.get(order[i]); if (!n || n.id === exclude) continue;
+    if (gone(n)) continue;
     const p = renderPos(n); if (Math.abs(wx - p.x) < (n.w * sc(n)) / 2 + 4 && Math.abs(wy - p.y) < (n.h * sc(n)) / 2 + 4) return n;
   }
   return null;
@@ -834,7 +909,7 @@ function nodeAt(wx, wy, exclude) {
 function linkAt(wx, wy) {
   const tol = 14 / cam.z;
   for (const l of links.values()) {
-    const A = nodes.get(l.from), B = nodes.get(l.to); if (!A || !B || l.cx === null) continue;
+    const A = nodes.get(l.from), B = nodes.get(l.to); if (!A || !B || l.cx === null || gone(A) || gone(B)) continue;
     const pa = renderPos(A), pb = renderPos(B);
     for (let k = 0; k <= 20; k++) {
       const t = k / 20, u = 1 - t;
@@ -874,6 +949,36 @@ function tryLink(fromId, toId) {
 }
 
 /* ---------- pointer + keyboard ---------- */
+/* chain: while one linked task is dragged, its arrows act as ropes that pull the others along with some lag */
+let chain = null;
+function startChain(group) {
+  const set = new Set(group);
+  chain = { set, until: Infinity, ropes: [...links.values()].filter((l) => set.has(l.from) && set.has(l.to)).map((l) => {
+    const A = nodes.get(l.from), B = nodes.get(l.to); return { a: A, b: B, rest: Math.hypot(A.x - B.x, A.y - B.y) }; }) };
+}
+function stepChain(h) {
+  if (!chain) return;
+  if (T > chain.until) { chain = null; return; }
+  for (const r of chain.ropes) {
+    const { a, b } = r, dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1, ext = d - r.rest;
+    if (ext <= 0) continue; // a rope only pulls; pushing is left to collisions
+    const nx = dx / d, ny = dy / d, wa = a.dragging ? 0 : 1, wb = b.dragging ? 0 : 1, sum = wa + wb; if (!sum) continue;
+    const f = ext * 55 * h; // pull grows with the stretch
+    a.vx += nx * f * wa / sum * 2; a.vy += ny * f * wa / sum * 2; b.vx -= nx * f * wb / sum * 2; b.vy -= ny * f * wb / sum * 2;
+    if (ext > 160) { const c = (ext - 160) * 0.25 / sum; a.x += nx * c * wa; a.y += ny * c * wa; b.x -= nx * c * wb; b.y -= ny * c * wb; } // never stretch too far
+  }
+}
+function linkedGroup(start) { // every visible task joined to this one by arrows, in either direction
+  const seen = new Set([start]), stack = [start];
+  while (stack.length) {
+    const cur = stack.pop();
+    for (const l of links.values()) {
+      const other = l.from === cur ? l.to : l.to === cur ? l.from : null;
+      if (other && !seen.has(other) && nodes.has(other) && !gone(nodes.get(other))) { seen.add(other); stack.push(other); }
+    }
+  }
+  return [...seen];
+}
 function startLinkDrag(n, w) {
   gesture = { type: "link", id: n.id };
   linkDrag = { from: n.id, px: w.x, py: w.y, cx: n.x, cy: n.y, cvx: 0, cvy: 0, target: null, retract: false };
@@ -959,6 +1064,8 @@ canvas.addEventListener("pointermove", (e) => {
       if (Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) < 5) return;
       const n = nodes.get(gesture.id); if (!n) { gesture = null; return; }
       if (readOnly) { gesture = { type: "pan", sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y, moved: true }; return; }
+      const group = e.altKey ? [n.id] : linkedGroup(n.id); // linked tasks travel together; Option-drag moves one
+      if (group.length > 1) startChain(group); else chain = null;
       checkpoint(); gesture.type = "drag"; n.dragging = true; n.tx = n.x; n.ty = n.y; order = order.filter((x) => x !== n.id).concat(n.id);
       canvas.style.cursor = "grabbing";
     } // falls through
@@ -1023,7 +1130,7 @@ function endPointer(e, cancelled) {
     if (!cancelled && marquee) {
       const x0 = Math.min(marquee.x0, marquee.x1), x1 = Math.max(marquee.x0, marquee.x1), y0 = Math.min(marquee.y0, marquee.y1), y1 = Math.max(marquee.y0, marquee.y1);
       if (selectedId && !multi.has(selectedId)) multi.add(selectedId);
-      for (const m of nodes.values()) if (m.dim < 0.5 && m.x + m.w / 2 > x0 && m.x - m.w / 2 < x1 && m.y + m.h / 2 > y0 && m.y - m.h / 2 < y1) { if (!multi.has(m.id)) poke(m, 0.05); multi.add(m.id); }
+      for (const m of nodes.values()) if (m.dim < 0.5 && !gone(m) && m.x + m.w / 2 > x0 && m.x - m.w / 2 < x1 && m.y + m.h / 2 > y0 && m.y - m.h / 2 < y1) { if (!multi.has(m.id)) poke(m, 0.05); multi.add(m.id); }
       multiChanged();
     }
     marquee = null; return;
@@ -1035,6 +1142,7 @@ function endPointer(e, cancelled) {
   else if (g.type === "drag") {
     const n = nodes.get(g.id);
     if (n) { n.dragging = false; const sp = Math.hypot(n.vx, n.vy), max = 500; if (sp > max) { n.vx *= max / sp; n.vy *= max / sp; } squish(n, Math.atan2(n.vy, n.vx), Math.min(sp * 0.00008, 0.1)); }
+    if (chain) chain.until = T + 2.2; // let the chain swing and settle
     scheduleSave();
   } else if (g.type === "link") {
     if (linkDrag && linkDrag.target) { const ok = tryLink(linkDrag.from, linkDrag.target); if (ok) linkDrag = null; else linkDrag.retract = true; }
@@ -1057,6 +1165,8 @@ addEventListener("keydown", (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key.toLowerCase();
   if (k === "escape" && multi.size) { clearMulti(); return; }
+  if (k === "escape" && !$("proj-list").hidden) { openProjects(false); return; }
+  if (k === "escape" && !$("actions").hidden) { setPanel(null); return; }
   if (k === "escape" && drawingZone) { setDrawZone(false); return; }
   if (k === "escape" && selectedZoneId) { selectZone(null); return; }
   if ((k === "delete" || k === "backspace") && selectedZoneId && !readOnly) { e.preventDefault(); removeZone(selectedZoneId); toast("Deleted the zone. Its tasks stay."); return; }
@@ -1069,6 +1179,7 @@ addEventListener("keydown", (e) => {
   else if (k === "z") setDrawZone(!drawingZone);
   else if (k === "0") fitView(false);
   else if (k === "t") toggleTheme();
+  else if (k === "d") toggleDone();
   else if (k === "=" || k === "+") zoomAt(W / 2, H / 2, 1.2);
   else if (k === "-") zoomAt(W / 2, H / 2, 1 / 1.2);
 });
@@ -1219,15 +1330,19 @@ function uiChanged() {
   });
 }
 function renderProjects() {
-  const box = $("projects"), names = projectList(), key = names.join("|") + "#" + (focus || "");
+  const box = $("proj-list"), names = projectList(), count = (p) => [...nodes.values()].filter((n) => (!p || n.project === p) && (showDone || !n.done)).length;
+  const key = names.join("|") + "#" + (focus || "") + "#" + names.map(count).join(",") + "#" + count(null);
+  $("proj-label").textContent = focus || "All projects";
   if (box.dataset.key === key) return;
   box.dataset.key = key; box.textContent = "";
-  ["All", ...names].forEach((name, i) => {
-    const b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.setAttribute("role", "radio");
-    const val = i === 0 ? null : name; b.textContent = name;
-    b.setAttribute("aria-checked", String(val === focus)); b.onclick = () => setFocus(val); box.append(b);
+  [[null, "All projects"], ...names.map((n) => [n, n])].forEach(([val, label]) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.setAttribute("role", "option");
+    b.setAttribute("aria-selected", String(val === focus));
+    const t = document.createElement("span"), c = document.createElement("span"); t.textContent = label; c.className = "n"; c.textContent = count(val);
+    b.append(t, c); b.onclick = () => { setFocus(val); openProjects(false); }; box.append(b);
   });
 }
+function openProjects(on) { $("proj-list").hidden = !on; $("proj-btn").setAttribute("aria-expanded", String(on)); }
 function setFocus(name) {
   focus = name;
   try { if (name) localStorage.setItem(FOCUS_KEY, name); else localStorage.removeItem(FOCUS_KEY); } catch (e) {}
@@ -1257,6 +1372,21 @@ $("zone-close").onclick = () => selectZone(null);
 $("zone-rename").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); endRename(true); } else if (e.key === "Escape") { e.preventDefault(); endRename(false); } });
 $("zone-rename").addEventListener("blur", () => endRename(true));
 canvas.addEventListener("wheel", () => endRename(true), { passive: true });
+const MENU_KEY = "task-cloud-legend";
+function setPanel(which) { // "actions", "legend" or null; only one is open at a time
+  $("actions").hidden = which !== "actions"; $("fab").setAttribute("aria-expanded", String(which === "actions"));
+  $("legend").hidden = which !== "legend"; $("legend-btn").setAttribute("aria-expanded", String(which === "legend"));
+  $("fab").setAttribute("aria-label", which === "actions" ? "Hide actions" : "Show actions");
+  $("legend-btn").setAttribute("aria-label", which === "legend" ? "Hide legend" : "Show legend");
+  try { localStorage.setItem(MENU_KEY, which === "legend" ? "1" : "0"); } catch (e) {}
+}
+$("proj-btn").onclick = (e) => { e.stopPropagation(); openProjects($("proj-list").hidden); };
+document.addEventListener("pointerdown", (e) => { if (!$("proj-list").hidden && !e.target.closest(".dd")) openProjects(false); }, true);
+$("fab").onclick = () => setPanel($("actions").hidden ? "actions" : null);
+$("legend-btn").onclick = () => setPanel($("legend").hidden ? "legend" : null);
+$("actions").addEventListener("click", (e) => { if (e.target.closest("button")) setPanel(null); });
+canvas.addEventListener("pointerdown", () => { if (!$("actions").hidden) setPanel(null); }, true);
+try { if (localStorage.getItem(MENU_KEY) === "1") setPanel("legend"); } catch (e) {}
 $("add").onclick = addAtCenter; $("empty-add").onclick = addAtCenter;
 $("connect").onclick = () => setConnect(!connectMode);
 $("fit").onclick = () => fitView(false);
@@ -1266,8 +1396,19 @@ function toggleTheme() {
   try { localStorage.setItem(THEME_KEY, light ? "light" : "dark"); } catch (e) {}
   showThemeLabel();
 }
-function showThemeLabel() { $("theme").firstChild.nodeValue = (document.documentElement.dataset.theme === "light" ? "Dark" : "Light") + " "; }
+function showThemeLabel() { $("theme").firstChild.nodeValue = (document.documentElement.dataset.theme === "light" ? "Dark theme" : "Light theme") + " "; }
 $("theme").onclick = toggleTheme; showThemeLabel();
+function toggleDone() {
+  showDone = !showDone;
+  try { localStorage.setItem(DONE_KEY, showDone ? "1" : "0"); } catch (e) {}
+  $("show-done").setAttribute("aria-pressed", String(showDone));
+  uiChanged();
+  $("show-done").title = showDone ? "Hide done tasks" : "Show done tasks";
+  const k = [...nodes.values()].filter((n) => n.done).length;
+  toast(showDone ? `Showing ${k} done task${k === 1 ? "" : "s"}.` : `Hid ${k} done task${k === 1 ? "" : "s"}.`);
+}
+$("show-done").onclick = toggleDone;
+$("show-done").setAttribute("aria-pressed", String(showDone)); $("show-done").title = showDone ? "Hide done tasks" : "Show done tasks";
 $("zin").onclick = () => zoomAt(W / 2, H / 2, 1.25);
 $("zout").onclick = () => zoomAt(W / 2, H / 2, 1 / 1.25);
 $("ed-close").onclick = () => select(null);
@@ -1292,7 +1433,8 @@ $("ed-proj-new").addEventListener("keydown", (e) => {
   const v = e.target.value.trim().slice(0, 40); if (!v || !selectedId) return;
   patchTask(selectedId, { project: v }); e.target.value = ""; poke(nodes.get(selectedId), 0.12);
 });
-$("ed-status").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && selectedId) { patchTask(selectedId, { status: b.dataset.v, done: b.dataset.v === "done" }); poke(nodes.get(selectedId), 0.16); } });
+$("ed-status").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && selectedId) { patchTask(selectedId, { status: b.dataset.v, done: b.dataset.v === "done" }); poke(nodes.get(selectedId), 0.16);
+  if (b.dataset.v === "done" && !showDone) toast("Done. It hides when you close the panel. Press D to show done tasks."); } });
 $("ed-link").onclick = () => { if (!selectedId) return; pendingLinkFrom = pendingLinkFrom ? null : selectedId; updateLinkButton(); };
 $("ed-del").onclick = () => { $("ed-confirm").hidden = false; };
 $("ed-del-no").onclick = () => { $("ed-confirm").hidden = true; };
@@ -1334,8 +1476,29 @@ async function pullInbox(seed) {
     for (const z of inbox.zones || []) if (z.id && !seen.has(z.id) && !zones.has(z.id)) { applyZone(z.id, z); seen.add(z.id); added++; }
     for (const l of inbox.links || []) if (l.id && !seen.has(l.id) && !links.has(l.id) && nodes.has(l.from) && nodes.has(l.to)) { applyLink(l.id, l); seen.add(l.id); }
   }
+  // one-off operations: { id, remove: taskId }, { id, update: taskId, patch: {...} } or { id, moveTask: taskId, toZone: "Zone name" }
+  let changed = 0;
+  const ops = ((inbox && inbox.ops) || []).filter((o) => o.id && !seen.has("op:" + o.id));
+  if (ops.length) checkpoint();
+  for (const o of ops) {
+    seen.add("op:" + o.id);
+    if (o.remove && nodes.has(o.remove)) { removeTask(o.remove); changed++; }
+    if (o.update && nodes.has(o.update) && o.patch && typeof o.patch === "object") { patchTask(o.update, o.patch, true); poke(nodes.get(o.update), 0.1); changed++; }
+    if (o.moveTask && nodes.has(o.moveTask) && o.toZone) {
+      const name = String(o.toZone).toLowerCase();
+      let z = [...zones.values()].find((q) => q.name.toLowerCase() === name);
+      const n = nodes.get(o.moveTask);
+      if (!z) { const id = "z" + Math.random().toString(36).slice(2, 9); applyZone(id, { name: o.toZone, project: n.project || null, x: n.x - 200, y: n.y - 110, w: 400, h: 220 }); z = zones.get(id); writeZone(z, true); }
+      if (!inZone(z, n)) {
+        const k = [...nodes.values()].filter((m) => inZone(z, m)).length;
+        n.x = z.x + Math.min(z.w - 120, 130 + (k % 3) * 220); n.y = z.y + Math.min(z.h - 50, 70 + Math.floor(k / 3) * 100); n.vx = n.vy = 0; poke(n, 0.12);
+        n.savedX = Math.round(n.x); n.savedY = Math.round(n.y); writeTask(n.id, { x: n.savedX, y: n.savedY }, false);
+      }
+      changed++;
+    }
+  }
   try { localStorage.setItem(SEEN_KEY, JSON.stringify([...seen])); } catch (e) {}
-  if (added) { persistLocal(); toast(`Added ${added} new item${added > 1 ? "s" : ""}.`); }
+  if (added || changed) { persistLocal(); toast(`Inbox: ${added} added, ${changed} changed.`); }
 }
 async function init() {
   $("empty").hidden = false;
