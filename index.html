@@ -1,0 +1,1373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Task Cloud</title>
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
+<!-- Example board shown on first open. Your own tasks are kept in this browser (localStorage). -->
+<script>window.TASK_CLOUD_SEED={"tasks": [{"id": "d1", "title": "Write the launch plan", "priority": "High", "size": "M", "status": "doing", "done": false, "project": "Website", "x": -260, "y": -120, "description": "Dates, owners and the order of the launch steps."}, {"id": "d2", "title": "Design the landing page", "priority": "High", "size": "L", "status": "todo", "done": false, "project": "Website", "x": 40, "y": -140, "description": ""}, {"id": "d3", "title": "Pick a domain name", "priority": "Low", "size": "XS", "status": "done", "done": true, "project": "Website", "x": -280, "y": 60, "description": ""}, {"id": "d4", "title": "Set up analytics", "priority": "Middle", "size": "S", "status": "todo", "done": false, "project": "Website", "x": -20, "y": 60, "description": ""}, {"id": "d5", "title": "Draft onboarding emails", "priority": "Middle", "size": "M", "status": "todo", "done": false, "project": "Marketing", "x": -300, "y": 240, "description": ""}, {"id": "d6", "title": "Record a demo video", "priority": "Middle", "size": "L", "status": "todo", "done": false, "project": "Marketing", "x": 320, "y": 40, "description": ""}, {"id": "d7", "title": "Fix the login bug", "priority": "High", "size": "S", "status": "done", "done": true, "project": "App", "x": 330, "y": -170, "description": ""}, {"id": "d8", "title": "Collect beta feedback", "priority": "Low", "size": "M", "status": "todo", "done": false, "project": "Marketing", "x": -80, "y": 420, "description": ""}, {"id": "d9", "title": "Add a dark mode", "priority": "Low", "size": "S", "status": "todo", "done": false, "project": "App", "x": 200, "y": 420, "description": ""}], "links": [{"id": "e1", "from": "d3", "to": "d4"}, {"id": "e2", "from": "d2", "to": "d6"}, {"id": "e3", "from": "d1", "to": "d5"}], "zones": [{"id": "y1", "name": "Backlog", "project": null, "x": -220, "y": 350, "w": 560, "h": 150}]};</script>
+</head>
+<body>
+<style>
+/* Layout: full-screen canvas; linear controls pinned to the corners. Base: DW branding tokens; dark by default, light via the switcher. */
+:root {
+  color-scheme: dark;
+  --bg: #0e0f10; --bg-alt: #1b1c1e; --surface: #141517;
+  --ink: #ececec; --ink-muted: #b4b7bb; --ink-subtle: #9a9da2;
+  --rule: #2c2f33; --rule-strong: #ececec; --dot: #23262a; --line: #5c5f63;
+  --accent: #7fb6e0; --accent-hover: #a3cbea;
+  --p-high: #ef6b63; --p-mid: #e0b030; --p-low: #5cc28f; --p-done: #55585c; --err: #ef6b63; --good: #5cc28f; --zone: rgba(255,255,255,0.025);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --radius: 0.125rem;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fafafa; --bg-alt: #f2f3f4; --surface: #ffffff;
+  --ink: #1a1a1a; --ink-muted: #5c5f63; --ink-subtle: #6b6e72;
+  --rule: #d5d8da; --rule-strong: #1a1a1a; --dot: #dfe2e5; --line: #9a9da2;
+  --accent: #1d5c8a; --accent-hover: #164a70;
+  --p-high: #c8322b; --p-mid: #b07800; --p-low: #1f7a4d; --p-done: #b4b7bb; --err: #c8322b; --good: #1f7a4d; --zone: rgba(26,26,26,0.03);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+#sky { position: fixed; inset: 0; display: block; touch-action: none; outline: none; }
+.panel { background: var(--bg); border: 1px solid var(--rule); border-radius: var(--radius); }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+::selection { background: var(--accent); color: var(--bg); }
+.label, .btn, .eyebrow, legend, .meta, .zoom output, .legend { font-family: var(--font-mono); font-size: .7rem; letter-spacing: .07em; text-transform: uppercase; }
+
+.topbar { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 16px);
+  left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; pointer-events: none; }
+.topbar > * { pointer-events: auto; }
+.brand { display: flex; align-items: baseline; gap: 14px; padding: 10px 14px; }
+.brand h1 { margin: 0; font-weight: 500; font-size: 17px; letter-spacing: -.02em; }
+.meta { color: var(--ink-subtle); font-variant-numeric: tabular-nums; }
+.tools { display: flex; gap: 0; }
+.tools .btn + .btn { border-left: 1px solid var(--rule); }
+.btn { border: 0; background: transparent; padding: 10px 14px; border-radius: 0; display: inline-flex; gap: 8px; align-items: center; color: var(--ink); min-height: 38px; }
+.btn:hover { background: var(--bg-alt); }
+.btn.primary { color: var(--accent); }
+.btn.primary:hover { color: var(--accent-hover); }
+.btn[aria-pressed="true"] { color: var(--bg); background: var(--accent); }
+.btn .k { color: var(--ink-subtle); border: 1px solid var(--rule); border-radius: var(--radius); padding: 0 4px; font-size: .62rem; }
+.btn[aria-pressed="true"] .k { color: var(--bg); border-color: var(--bg); }
+
+.zoom { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); display: flex; align-items: stretch; }
+.zoom .btn { width: 38px; justify-content: center; padding: 0; font-size: 15px; }
+.zoom output { width: 56px; display: grid; place-items: center; color: var(--ink-subtle); font-variant-numeric: tabular-nums; border-inline: 1px solid var(--rule); }
+
+.legend { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  padding: 10px 14px; display: grid; gap: 8px; color: var(--ink-subtle); max-width: calc(100vw - 200px); }
+.legend .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.sw { display: inline-flex; align-items: center; gap: 6px; }
+.sw i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 1.5px solid; background: transparent; }
+.legend .hint { text-transform: none; letter-spacing: .02em; font-size: .68rem; }
+
+.sheet { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 72px); right: max(16px, env(safe-area-inset-right, 0px));
+  width: min(340px, calc(100vw - 32px)); padding: 0; display: grid; z-index: 5; border-top: 2px solid var(--rule-strong);
+  animation: slide .18s ease-out; }
+.sheet > * { padding: 14px 16px; }
+.sheet > * + * { border-top: 1px solid var(--rule); }
+@keyframes slide { from { transform: translateY(-4px); opacity: 0 } to { transform: none; opacity: 1 } }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; padding-block: 8px !important; }
+.eyebrow { color: var(--ink-subtle); }
+.icon-btn { border: 0; background: transparent; width: 30px; height: 30px; border-radius: var(--radius); font-size: 18px; line-height: 1; color: var(--ink-subtle); }
+.icon-btn:hover { background: var(--bg-alt); color: var(--ink); }
+#ed-title, #zone-name { width: 100%; resize: none; border: 0; background: transparent; color: var(--ink); padding: 0; font: 500 19px/1.3 var(--font-sans); letter-spacing: -.02em; }
+#ed-title:focus-visible, #ed-desc:focus-visible, #zone-name:focus-visible { outline: none; }
+#ed-desc { width: 100%; resize: vertical; border: 0; background: transparent; color: var(--ink-muted); padding: 6px 0 0; font: 14px/1.5 var(--font-sans); min-height: 2.6em; max-height: 40vh; }
+#ed-desc::placeholder { color: var(--ink-subtle); }
+.field-title:focus-within { box-shadow: inset 2px 0 0 var(--accent); }
+fieldset { border: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+legend { padding: 0 0 8px; color: var(--ink-subtle); float: left; width: 100%; }
+.seg { display: flex; border: 1px solid var(--rule); border-radius: var(--radius); clear: both; }
+.seg button { flex: 1; border: 0; background: transparent; padding: 8px 0; font-size: 13px; color: var(--ink-muted); display: inline-flex; justify-content: center; align-items: center; gap: 6px; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button:hover { background: var(--bg-alt); color: var(--ink); }
+.seg button[aria-checked="true"] { background: var(--bg-alt); color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
+.seg button .dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid; display: inline-block; }
+.seg.mono button { font-family: var(--font-mono); font-size: 12px; }
+.projrow { display: grid; gap: 8px; clear: both; }
+#ed-proj, #zone-proj { flex-wrap: wrap; }
+#ed-proj button, #zone-proj button { flex: 1 1 auto; padding-inline: 10px; }
+#ed-proj-new, #zone-proj-new { width: 100%; border: 1px solid var(--rule); border-radius: var(--radius); background: transparent; color: var(--ink); padding: 7px 10px; font: 13px var(--font-sans); }
+#ed-proj-new::placeholder, #zone-proj-new::placeholder { color: var(--ink-subtle); }
+#projects .btn[aria-checked="true"] { color: var(--bg); background: var(--accent); }
+#projects { max-width: 100%; overflow-x: auto; }
+.check { display: flex; gap: 10px; align-items: center; color: var(--ink); }
+.check input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
+.deps { display: grid; gap: 10px; }
+.deps:empty { display: none; }
+.deps .label { color: var(--ink-subtle); }
+.chips { display: grid; gap: 0; margin-top: 6px; }
+.chip { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--rule); padding: 5px 0; font-size: 13px; color: var(--ink-muted); }
+.chip:last-child { border-bottom: 1px solid var(--rule); }
+.chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.chip button { border: 0; background: transparent; width: 24px; height: 24px; border-radius: var(--radius); color: var(--ink-subtle); flex: none; }
+.chip button:hover { background: var(--bg-alt); color: var(--ink); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.actions .btn, .confirm .btn { border: 1px solid var(--rule); border-radius: var(--radius); padding: 8px 12px; min-height: 0; }
+.btn.danger { color: var(--p-high); }
+.confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; color: var(--ink); }
+.confirm .btn.yes { border-color: var(--p-high); }
+
+.linkbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+  display: flex; gap: 10px; align-items: center; padding: 6px 6px 6px 14px; max-width: calc(100vw - 32px); z-index: 4; font-size: 14px; }
+.linkbar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; color: var(--ink-muted); }
+.linkbar .btn { border: 1px solid var(--rule); border-radius: var(--radius); min-height: 0; padding: 7px 10px; }
+#zone-rename { position: fixed; z-index: 8; height: 24px; padding: 0 6px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--bg); color: var(--ink);
+  font: 12px var(--font-mono); letter-spacing: .06em; outline: none; }
+.toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 72px); transform: translateX(-50%);
+  padding: 10px 16px; background: var(--bg-alt); border: 1px solid var(--rule); border-top: 2px solid var(--accent); border-radius: var(--radius);
+  color: var(--ink); z-index: 9; max-width: calc(100vw - 32px); font-size: 14px; animation: slide .18s ease-out; }
+.toast.err { border-top-color: var(--err); }
+.center-card { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); padding: 22px 24px; border-top: 2px solid var(--rule-strong);
+  display: grid; gap: 10px; justify-items: start; width: min(340px, calc(100vw - 32px)); }
+.center-card h2 { margin: 0; font-weight: 500; font-size: 19px; letter-spacing: -.02em; }
+.center-card p { margin: 0; color: var(--ink-muted); }
+.center-card .btn { border: 1px solid var(--rule); border-radius: var(--radius); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+@media (max-width: 640px) {
+  .sheet { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); left: max(16px, env(safe-area-inset-left, 0px)); width: auto; max-height: 62vh; overflow: auto; }
+  .legend { display: none; }
+  .btn .k { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .sheet, .toast { animation: none; } }
+</style>
+
+<canvas id="sky" tabindex="-1" aria-label="Task cloud. Use the task list below to select tasks with the keyboard."></canvas>
+
+<header class="topbar">
+  <div class="brand panel"><h1>Task Cloud</h1><span class="meta" id="meta">loading</span></div>
+  <div class="tools panel" id="projects" role="radiogroup" aria-label="Project"></div>
+  <div class="tools panel" role="toolbar" aria-label="Board tools">
+    <button class="btn primary" id="add" type="button">+ Add task <span class="k">N</span></button>
+    <button class="btn" id="add-zone" type="button" aria-pressed="false">+ Zone <span class="k">Z</span></button>
+    <button class="btn" id="connect" type="button" aria-pressed="false">Connect <span class="k">C</span></button>
+    <button class="btn" id="fit" type="button">Fit <span class="k">0</span></button>
+    <button class="btn" id="theme" type="button" aria-label="Switch theme">Light <span class="k">T</span></button>
+  </div>
+</header>
+
+<div class="zoom panel" role="group" aria-label="Zoom">
+  <button class="btn" id="zout" type="button" aria-label="Zoom out">−</button>
+  <output id="zlevel">100%</output>
+  <button class="btn" id="zin" type="button" aria-label="Zoom in">+</button>
+</div>
+
+<div class="legend panel" aria-label="Legend">
+  <div class="row">
+    <span class="sw"><i style="border-color:var(--p-high)"></i>High</span>
+    <span class="sw"><i style="border-color:var(--p-mid)"></i>Middle</span>
+    <span class="sw"><i style="border-color:var(--p-low)"></i>Low</span>
+    <span class="sw"><i style="border-color:var(--accent);border-style:dashed"></i>In progress</span>
+    <span class="sw"><i style="border-color:var(--p-done)"></i>Done</span>
+  </div>
+  <div class="hint">Shape size = T-shirt size · Arrow A → B: B waits for A</div>
+  <div class="hint">Tap to select · Drag to move · ⌘-drag from a task to draw an arrow · Scroll to zoom</div>
+  <div class="hint">⌘-click a task or ⌘-drag on empty space to select many · Del removes · ⌘Z undo · ⇧⌘Z redo</div>
+  <div class="hint">Zones: Z then drag to draw · drag the name or the outline to move a zone · double-click the name to rename · drag the corner to resize</div>
+</div>
+
+<aside class="sheet panel" id="editor" hidden aria-label="Edit task">
+  <div class="sheet-head"><span class="eyebrow" id="ed-eyebrow">Task</span><button class="icon-btn" id="ed-close" type="button" aria-label="Close">×</button></div>
+  <div class="field-title"><label class="sr-only" for="ed-title">Task title</label><textarea id="ed-title" rows="2" maxlength="140"></textarea>
+    <label class="sr-only" for="ed-desc">Description</label><textarea id="ed-desc" rows="3" maxlength="2000" placeholder="Add a description (optional)"></textarea></div>
+  <fieldset><legend>Priority</legend>
+    <div class="seg" id="ed-pri" role="radiogroup" aria-label="Priority">
+      <button type="button" role="radio" data-v="Low"><i class="dot" style="border-color:var(--p-low)"></i>Low</button>
+      <button type="button" role="radio" data-v="Middle"><i class="dot" style="border-color:var(--p-mid)"></i>Middle</button>
+      <button type="button" role="radio" data-v="High"><i class="dot" style="border-color:var(--p-high)"></i>High</button>
+    </div></fieldset>
+  <fieldset><legend>Size</legend>
+    <div class="seg mono" id="ed-size" role="radiogroup" aria-label="Size">
+      <button type="button" role="radio" data-v="XS">XS</button><button type="button" role="radio" data-v="S">S</button>
+      <button type="button" role="radio" data-v="M">M</button><button type="button" role="radio" data-v="L">L</button>
+      <button type="button" role="radio" data-v="XL">XL</button>
+    </div></fieldset>
+  <fieldset><legend>Project</legend>
+    <div class="projrow">
+      <div class="seg" id="ed-proj" role="radiogroup" aria-label="Project"></div>
+      <label class="sr-only" for="ed-proj-new">New project</label>
+      <input id="ed-proj-new" type="text" maxlength="40" placeholder="+ New project" autocomplete="off">
+    </div></fieldset>
+  <fieldset><legend>Status</legend>
+    <div class="seg" id="ed-status" role="radiogroup" aria-label="Status">
+      <button type="button" role="radio" data-v="todo">To do</button>
+      <button type="button" role="radio" data-v="doing">In progress</button>
+      <button type="button" role="radio" data-v="done">Done</button>
+    </div></fieldset>
+  <div class="deps" id="ed-deps"></div>
+  <div class="actions" id="ed-actions">
+    <button class="btn" id="ed-link" type="button">Link to another task</button>
+    <button class="btn danger" id="ed-del" type="button">Delete</button>
+  </div>
+  <div class="confirm" id="ed-confirm" hidden>
+    <span>Delete this task and its arrows?</span>
+    <button class="btn yes" id="ed-del-yes" type="button">Delete</button>
+    <button class="btn" id="ed-del-no" type="button">Keep</button>
+  </div>
+</aside>
+
+<div class="linkbar panel" id="bulkbar" hidden>
+  <span id="bulk-text"></span>
+  <button class="btn danger" id="bulk-del" type="button">Delete</button>
+  <button class="icon-btn" id="bulk-close" type="button" aria-label="Clear selection">×</button>
+</div>
+
+<label class="sr-only" for="zone-rename">Zone name</label>
+<input id="zone-rename" type="text" maxlength="60" autocomplete="off" hidden>
+<aside class="sheet panel" id="zone-editor" hidden aria-label="Edit zone">
+  <div class="sheet-head"><span class="eyebrow" id="zone-eyebrow">Zone</span><button class="icon-btn" id="zone-close" type="button" aria-label="Close">×</button></div>
+  <div class="field-title"><label class="sr-only" for="zone-name">Zone name</label><textarea id="zone-name" rows="1" maxlength="60"></textarea></div>
+  <fieldset><legend>Project</legend>
+    <div class="projrow">
+      <div class="seg" id="zone-proj" role="radiogroup" aria-label="Zone project"></div>
+      <label class="sr-only" for="zone-proj-new">New project</label>
+      <input id="zone-proj-new" class="proj-new" type="text" maxlength="40" placeholder="+ New project" autocomplete="off">
+    </div></fieldset>
+  <div class="actions">
+    <button class="btn danger" id="zone-del" type="button">Delete zone</button>
+  </div>
+</aside>
+
+<div class="linkbar panel" id="linkbar" hidden>
+  <span id="linkbar-text"></span>
+  <button class="btn danger" id="linkbar-del" type="button">Remove arrow</button>
+  <button class="icon-btn" id="linkbar-close" type="button" aria-label="Close">×</button>
+</div>
+
+<div class="center-card panel" id="empty" hidden>
+  <h2 id="empty-title">Loading your tasks</h2>
+  <p id="empty-text">The cloud fills in a moment.</p>
+  <button class="btn primary" id="empty-add" type="button" hidden>+ Add your first task</button>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+<ul class="sr-only" id="a11y-list" aria-label="Tasks"></ul>
+
+<script>
+(() => {
+"use strict";
+const N_BLOB = 56;
+const SIZES = { XS: [152, 64], S: [176, 70], M: [204, 78], L: [240, 88], XL: [284, 100] }; // width, height
+const THEME_KEY = "task-cloud-theme";
+try { if (localStorage.getItem(THEME_KEY) === "light") document.documentElement.dataset.theme = "light"; } catch (e) {}
+const PRIS = ["Low", "Middle", "High"];
+const ZONE_CURSOR = 'url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cg%20stroke%3D%22%230e0f10%22%20stroke-width%3D%223%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M8%201v14M1%208h14%22/%3E%3Crect%20x%3D%2213%22%20y%3D%2213%22%20width%3D%2216%22%20height%3D%2212%22%20rx%3D%222%22/%3E%3C/g%3E%3Cg%20stroke%3D%22%237fb6e0%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M8%201v14M1%208h14%22/%3E%3Crect%20x%3D%2213%22%20y%3D%2213%22%20width%3D%2216%22%20height%3D%2212%22%20rx%3D%222%22%20stroke-dasharray%3D%223%202%22/%3E%3C/g%3E%3C/svg%3E") 8 8, crosshair'; // crosshair with a small dashed frame
+const STATUSES = ["todo", "doing", "done"];
+const MAX_SPEED = 320; // px/s cap for anything not held by the pointer
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = (id) => document.getElementById(id);
+
+/* ---------- canvas + theme ---------- */
+const canvas = $("sky"), ctx = canvas.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+function resize() {
+  DPR = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  canvas.style.width = W + "px"; canvas.style.height = H + "px";
+}
+addEventListener("resize", resize); resize();
+let C = {};
+function readColors() {
+  const st = getComputedStyle(document.documentElement), g = (n) => st.getPropertyValue(n).trim();
+  C = { bg: g("--bg"), zone: g("--zone"), rule: g("--rule"), dot: g("--dot"), ink: g("--ink"), muted: g("--ink-subtle"), surface: g("--surface"), High: g("--p-high"), Middle: g("--p-mid"),
+    Low: g("--p-low"), done: g("--p-done"), line: g("--line"), lineHot: g("--accent"), err: g("--err"), good: g("--good") };
+}
+readColors();
+new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+/* ---------- model ---------- */
+const nodes = new Map(), links = new Map(), zones = new Map();
+let selectedZoneId = null;
+let order = [];
+let selectedId = null, selectedLinkId = null, pendingLinkFrom = null, connectMode = false;
+let readOnly = false, mode = "loading", db = null;
+const FOCUS_KEY = "task-cloud-focus";
+let focus = null;
+try { focus = localStorage.getItem(FOCUS_KEY) || null; } catch (e) {}
+function projectList() {
+  const count = new Map();
+  for (const n of nodes.values()) count.set(n.project, (count.get(n.project) || 0) + 1);
+  if (focus && !count.has(focus)) count.set(focus, 0);
+  return [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map((e) => e[0]);
+}
+const topProject = () => projectList()[0] || "General";
+const cam = { x: 0, y: 0, z: 1, tx: null, ty: null, tz: null };
+
+function spiralPos(i) { const a = i * 2.39996, d = 110 * Math.sqrt(i + 0.6); return { x: Math.cos(a) * d, y: Math.sin(a) * d }; }
+function makeNode(id, d) {
+  const p = (typeof d.x === "number" && typeof d.y === "number") ? { x: d.x, y: d.y } : spiralPos(nodes.size);
+  return { id, title: "", priority: "Middle", size: "M", done: false, x: p.x, y: p.y, vx: 0, vy: 0, w: 60, h: 24, wv: 0, hv: 0, r: 12,
+    off: new Float32Array(N_BLOB), offv: new Float32Array(N_BLOB), samp: new Float32Array(N_BLOB * 4), shake: 0, shakePh: 0, flash: 0, pop: 0, dim: 0, project: "General", status: "todo", description: "",
+    ph1: Math.random() * 6.28, ph2: Math.random() * 6.28,
+    savedX: typeof d.x === "number" ? d.x : null, savedY: typeof d.y === "number" ? d.y : null, dragging: false };
+}
+function setFields(n, d) {
+  if (typeof d.title === "string") n.title = d.title;
+  if (typeof d.description === "string") n.description = d.description.slice(0, 2000);
+  if (PRIS.includes(d.priority)) n.priority = d.priority;
+  if (SIZES[d.size]) { if (n.size !== d.size && n.pop > 0.5) poke(n, 0.12); n.size = d.size; }
+  if (STATUSES.includes(d.status)) { n.status = d.status; n.done = d.status === "done"; }
+  else if (typeof d.done === "boolean") { n.done = d.done; n.status = d.done ? "done" : (n.status === "done" ? "todo" : n.status); }
+  if (typeof d.project === "string" && d.project.trim()) n.project = d.project.trim().slice(0, 40);
+}
+function applyTask(id, d) {
+  let n = nodes.get(id);
+  if (!n) { n = makeNode(id, d); nodes.set(id, n); order.push(id); }
+  else if (typeof d.x === "number" && typeof d.y === "number" && (d.x !== n.savedX || d.y !== n.savedY) && !n.dragging) {
+    n.x = d.x; n.y = d.y; n.vx = n.vy = 0; n.savedX = d.x; n.savedY = d.y;
+  }
+  setFields(n, d); uiChanged();
+}
+function dropTask(id) {
+  if (!nodes.delete(id)) return;
+  order = order.filter((x) => x !== id);
+  for (const [lid, l] of links) if (l.from === id || l.to === id) links.delete(lid);
+  if (selectedId === id) select(null);
+  if (multi.delete(id)) multiChanged();
+  if (pendingLinkFrom === id) pendingLinkFrom = null;
+  if (gesture && gesture.id === id) gesture = null;
+  if (linkDrag && linkDrag.from === id) linkDrag = null;
+  uiChanged();
+}
+function applyLink(id, d) {
+  if (typeof d.from !== "string" || typeof d.to !== "string") return;
+  const l = links.get(id);
+  if (l) { l.from = d.from; l.to = d.to; } else links.set(id, { id, from: d.from, to: d.to, cx: null, cy: null, cvx: 0, cvy: 0 });
+  uiChanged();
+}
+function applyZone(id, d) {
+  const z = zones.get(id) || { id, name: "Zone", project: null, x: 0, y: 0, w: 520, h: 340, dim: 0 };
+  if (typeof d.name === "string") z.name = d.name.slice(0, 60);
+  if (typeof d.project === "string" && d.project.trim()) z.project = d.project.trim().slice(0, 40); else if (d.project === null || d.project === "") z.project = null;
+  for (const k of ["x", "y", "w", "h"]) if (typeof d[k] === "number") z[k] = d[k];
+  zones.set(id, z); uiChanged();
+}
+function dropZone(id) { if (zones.delete(id)) { if (selectedZoneId === id) selectZone(null); uiChanged(); } }
+const zoneData = (z) => ({ name: z.name, project: z.project, x: Math.round(z.x), y: Math.round(z.y), w: Math.round(z.w), h: Math.round(z.h) });
+function writeZone(z, create) {
+  if (readOnly) return;
+  if (mode === "db") queue(z.id, () => create ? db.doc("zones/" + z.id).set(zoneData(z)) : db.doc("zones/" + z.id).update(zoneData(z)));
+  else persistLocal();
+}
+let drawingZone = false;
+function setDrawZone(on) {
+  drawingZone = on && !readOnly; $("add-zone").setAttribute("aria-pressed", String(drawingZone));
+  canvas.style.cursor = drawingZone ? ZONE_CURSOR : "default";
+  if (drawingZone) toast("Drag on the board to draw a zone. Esc cancels.");
+}
+function createZone(r) {
+  checkpoint();
+  if (readOnly) return;
+  const id = newId("zones");
+  applyZone(id, { name: "New zone", project: focus || null, x: r.x, y: r.y, w: r.w, h: r.h });
+  writeZone(zones.get(id), true); selectZone(id);
+  setTimeout(() => { const t = $("zone-name"); t.focus(); t.select(); }, 40);
+}
+function removeZone(id) {
+  checkpoint();
+  if (readOnly) return; dropZone(id);
+  if (mode === "db") queue(id, () => db.doc("zones/" + id).delete()); else persistLocal();
+}
+const inZone = (z, n) => n.x > z.x && n.x < z.x + z.w && n.y > z.y && n.y < z.y + z.h;
+function dropLink(id) { if (links.delete(id)) { if (selectedLinkId === id) selectLink(null); uiChanged(); } }
+const linkBetween = (a, b) => { for (const l of links.values()) if (l.from === a && l.to === b) return l; return null; };
+function reaches(start, goal) { // is there a path start -> ... -> goal ?
+  const seen = new Set([start]), stack = [start];
+  while (stack.length) { const cur = stack.pop(); if (cur === goal) return true;
+    for (const l of links.values()) if (l.from === cur && !seen.has(l.to)) { seen.add(l.to); stack.push(l.to); } }
+  return false;
+}
+const prereqs = (id) => [...links.values()].filter((l) => l.to === id && nodes.has(l.from));
+const dependents = (id) => [...links.values()].filter((l) => l.from === id && nodes.has(l.to));
+const isBlocked = (id) => prereqs(id).some((l) => !nodes.get(l.from).done);
+
+/* ---------- storage (db capability, or this browser as a fallback) ---------- */
+const LS_KEY = "task-cloud-v1";
+const chains = {};
+function queue(key, fn) { const p = (chains[key] || Promise.resolve()).then(fn).catch(onWriteError); chains[key] = p; return p; }
+function onWriteError(e) {
+  const code = e && e.code;
+  if (code === "invalid_argument") { setReadOnly(true); toast("You can view this board but not change it.", true); }
+  else if (code === "quota_exceeded") toast("The board is full. Delete some tasks to add new ones.", true);
+  else if (code === "revoked") { setReadOnly(true); }
+  else toast("Could not save that change. Check your connection.", true);
+}
+let lsTimer = null;
+function persistLocal() {
+  if (mode !== "local") return;
+  clearTimeout(lsTimer);
+  lsTimer = setTimeout(() => { try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      tasks: order.map((id) => { const n = nodes.get(id); return { id, title: n.title, description: n.description, priority: n.priority, size: n.size, done: n.done, status: n.status, project: n.project, x: Math.round(n.x), y: Math.round(n.y) }; }),
+      links: [...links.values()].map((l) => ({ id: l.id, from: l.from, to: l.to })),
+      zones: [...zones.values()].map((z) => ({ id: z.id, ...zoneData(z) })) }));
+  } catch (e) {} }, 300);
+}
+const newId = (col) => (db ? db.collection(col).doc().id : col[0] + Math.random().toString(36).slice(2, 11));
+function writeTask(id, patch, create) {
+  if (readOnly) return;
+  if (mode === "db") queue(id, () => create ? db.doc("tasks/" + id).set(patch) : db.doc("tasks/" + id).update(patch));
+  else persistLocal();
+}
+function createTask(x, y) {
+  checkpoint();
+  if (readOnly) return;
+  const id = newId("tasks"), data = { title: "New task", description: "", priority: "Middle", size: "M", done: false, status: "todo", project: focus || topProject(), x: Math.round(x), y: Math.round(y) };
+  applyTask(id, data); writeTask(id, data, true);
+  const n = nodes.get(id); poke(n, 0.15);
+  select(id); setTimeout(() => { const t = $("ed-title"); t.focus(); t.select(); }, 40);
+}
+function patchTask(id, patch, noCheckpoint) {
+  const n = nodes.get(id); if (!n || readOnly) return;
+  if (!noCheckpoint) checkpoint();
+  setFields(n, patch); writeTask(id, patch, false); uiChanged();
+}
+function removeTask(id) {
+  checkpoint();
+  if (readOnly) return;
+  const ls = [...links.values()].filter((l) => l.from === id || l.to === id);
+  dropTask(id);
+  if (mode === "db") { ls.forEach((l) => queue(l.id, () => db.doc("links/" + l.id).delete())); queue(id, () => db.doc("tasks/" + id).delete()); }
+  else persistLocal();
+}
+function createLink(from, to) {
+  checkpoint();
+  const id = newId("links"); applyLink(id, { from, to });
+  if (mode === "db") queue(id, () => db.doc("links/" + id).set({ from, to })); else persistLocal();
+}
+function removeLink(id) {
+  checkpoint();
+  if (readOnly) return; dropLink(id);
+  if (mode === "db") queue(id, () => db.doc("links/" + id).delete()); else persistLocal();
+}
+/* ---------- undo ---------- */
+// Each user action saves the whole board first; undo writes the saved board back through the normal store.
+const undoStack = [], redoStack = [];
+let cpHeld = false, restoring = false;
+function snapshot() {
+  return {
+    tasks: order.filter((id) => nodes.has(id)).map((id) => { const n = nodes.get(id);
+      return { id, title: n.title, description: n.description, priority: n.priority, size: n.size, status: n.status, done: n.done, project: n.project, x: Math.round(n.x), y: Math.round(n.y) }; }),
+    links: [...links.values()].map((l) => ({ id: l.id, from: l.from, to: l.to })),
+    zones: [...zones.values()].map((z) => ({ id: z.id, ...zoneData(z) })),
+  };
+}
+function checkpoint() {
+  if (restoring || readOnly || cpHeld) return;
+  cpHeld = true; queueMicrotask(() => { cpHeld = false; }); // one step per user action, however many writes it makes
+  undoStack.push(snapshot()); if (undoStack.length > 100) undoStack.shift();
+  redoStack.length = 0;
+}
+function restore(snap) {
+  restoring = true;
+  try {
+    const T = new Map(snap.tasks.map((t) => [t.id, t])), L = new Map(snap.links.map((l) => [l.id, l])), Z = new Map(snap.zones.map((z) => [z.id, z]));
+    for (const id of [...links.keys()]) if (!L.has(id)) removeLink(id);
+    for (const id of [...nodes.keys()]) if (!T.has(id)) removeTask(id);
+    for (const id of [...zones.keys()]) if (!Z.has(id)) removeZone(id);
+    for (const t of snap.tasks) {
+      const { id, ...data } = t, n = nodes.get(id);
+      if (!n) { applyTask(id, data); writeTask(id, data, true); continue; }
+      setFields(n, data);
+      if (Math.round(n.x) !== t.x || Math.round(n.y) !== t.y) { n.x = t.x; n.y = t.y; n.vx = n.vy = 0; poke(n, 0.06); }
+      n.savedX = t.x; n.savedY = t.y; writeTask(id, data, false);
+    }
+    for (const l of snap.links) if (!links.has(l.id)) { applyLink(l.id, l); if (mode === "db") queue(l.id, () => db.doc("links/" + l.id).set({ from: l.from, to: l.to })); }
+    for (const z of snap.zones) { const { id, ...data } = z, isNew = !zones.has(id); applyZone(id, data); writeZone(zones.get(id), isNew); }
+    persistLocal(); uiChanged();
+  } finally { restoring = false; }
+}
+function undo() {
+  if (readOnly || !undoStack.length) { toast("Nothing to undo."); return; }
+  redoStack.push(snapshot()); restore(undoStack.pop()); toast("Undone.");
+}
+function redo() {
+  if (readOnly || !redoStack.length) { toast("Nothing to redo."); return; }
+  undoStack.push(snapshot()); restore(redoStack.pop()); toast("Redone.");
+}
+let saveTimer = null;
+function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(savePositions, 1300); }
+function savePositions() {
+  if (readOnly) return;
+  for (const n of nodes.values()) if (n.dragging) return scheduleSave();
+  for (const n of nodes.values()) {
+    const x = Math.round(n.x), y = Math.round(n.y);
+    if (n.savedX === null || Math.abs(x - n.savedX) > 2 || Math.abs(y - n.savedY) > 2) {
+      n.savedX = x; n.savedY = y; writeTask(n.id, { x, y }, false);
+    }
+  }
+}
+
+/* ---------- physics ---------- */
+function squish(n, ang, amt) {
+  const S = n.samp, ca = Math.cos(ang), sa = Math.sin(ang);
+  for (let i = 0; i < N_BLOB; i++) {
+    const c = S[i * 4 + 2] * ca + S[i * 4 + 3] * sa, w = c > 0 ? c * c * c : 0, s2 = 1 - c * c;
+    n.offv[i] += (-amt * w + amt * 0.3 * s2 * (c > -0.2 ? 1 : 0)) * n.r;
+  }
+}
+function rectPt(w, h, t, out, j) { // a point and its outward normal on a rounded rectangle, t in [0, 1)
+  const rc = Math.min(16, h * 0.28), hw = w / 2, hh = h / 2, sx = w - 2 * rc, sy = h - 2 * rc, arc = Math.PI * rc / 2;
+  let s = t * (2 * sx + 2 * sy + 4 * arc), x, y, nx, ny, a;
+  if (s < sx) { x = -hw + rc + s; y = -hh; nx = 0; ny = -1; }
+  else if ((s -= sx) < arc) { a = -Math.PI / 2 + (s / arc) * Math.PI / 2; nx = Math.cos(a); ny = Math.sin(a); x = hw - rc + nx * rc; y = -hh + rc + ny * rc; }
+  else if ((s -= arc) < sy) { x = hw; y = -hh + rc + s; nx = 1; ny = 0; }
+  else if ((s -= sy) < arc) { a = (s / arc) * Math.PI / 2; nx = Math.cos(a); ny = Math.sin(a); x = hw - rc + nx * rc; y = hh - rc + ny * rc; }
+  else if ((s -= arc) < sx) { x = hw - rc - s; y = hh; nx = 0; ny = 1; }
+  else if ((s -= sx) < arc) { a = Math.PI / 2 + (s / arc) * Math.PI / 2; nx = Math.cos(a); ny = Math.sin(a); x = -hw + rc + nx * rc; y = hh - rc + ny * rc; }
+  else if ((s -= arc) < sy) { x = -hw; y = hh - rc - s; nx = -1; ny = 0; }
+  else { s -= sy; a = Math.PI + Math.min(1, s / arc) * Math.PI / 2; nx = Math.cos(a); ny = Math.sin(a); x = -hw + rc + nx * rc; y = -hh + rc + ny * rc; }
+  out[j] = x; out[j + 1] = y; out[j + 2] = nx; out[j + 3] = ny;
+}
+function sampleShape(n) { for (let i = 0; i < N_BLOB; i++) rectPt(n.w, n.h, i / N_BLOB, n.samp, i * 4); }
+function poke(n, amt = 0.08) {
+  const k = reduceMotion ? 0.3 : 1;
+  for (let j = 0; j < 3; j++) squish(n, Math.random() * Math.PI * 2, amt * k * (0.6 + Math.random() * 0.6));
+  n.wv += 6 * k; n.hv += 3 * k;
+}
+function shakeNode(n) { if (!n) return; n.shake = reduceMotion ? 0.3 : 1; n.flash = 1; poke(n, 0.1); }
+
+let T = 0, linkDrag = null, marquee = null, hoverLinkId = null, hoverZoneId = null;
+const multi = new Set();
+function step(h) {
+  T += h;
+  const arr = [...nodes.values()];
+  for (const n of arr) {
+    n.pop += (1 - n.pop) * 0.12;
+    n.dim += ((focus && n.project !== focus ? 1 : 0) - n.dim) * 0.1;
+    const [tw, th] = SIZES[n.size];
+    n.wv += (tw - n.w) * 0.16; n.wv *= 0.74; n.w += n.wv; n.hv += (th - n.h) * 0.16; n.hv *= 0.74; n.h += n.hv; n.r = n.h / 2;
+    sampleShape(n);
+    if (n.dragging) {
+      const nx = n.x + (n.tx - n.x) * 0.45, ny = n.y + (n.ty - n.y) * 0.45;
+      n.vx = (nx - n.x) / h; n.vy = (ny - n.y) / h; n.x = nx; n.y = ny;
+    } else {
+      n.vx *= 0.86; n.vy *= 0.86;
+      const sp = Math.hypot(n.vx, n.vy); if (sp > MAX_SPEED) { n.vx *= MAX_SPEED / sp; n.vy *= MAX_SPEED / sp; }
+      n.x += n.vx * h; n.y += n.vy * h;
+    }
+    n.shake *= 0.92; n.shakePh += h * 44; n.flash *= 0.95;
+  }
+  for (const z of zones.values()) z.dim += ((focus && z.project && z.project !== focus ? 1 : 0) - z.dim) * 0.1;
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 0; i < arr.length; i++) for (let j = i + 1; j < arr.length; j++) {
+      const a = arr[i], b = arr[j];
+      let dx = b.x - a.x; const dy = b.y - a.y;
+      const ox = (a.w * sc(a) + b.w * sc(b)) / 2 + 14 - Math.abs(dx), oy = (a.h * sc(a) + b.h * sc(b)) / 2 + 14 - Math.abs(dy);
+      if (ox <= 0 || oy <= 0) continue;
+      if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) dx = Math.random() - 0.5;
+      let nx = 0, ny = 0, pen;
+      if (ox < oy) { nx = dx < 0 ? -1 : 1; pen = ox; } else { ny = dy < 0 ? -1 : 1; pen = oy; }
+      const ima = a.dragging ? 0 : 1 / (a.w * a.h), imb = b.dragging ? 0 : 1 / (b.w * b.h), sum = ima + imb;
+      if (!sum) continue;
+      const corr = pen * 0.5 / sum;
+      a.x -= nx * corr * ima; a.y -= ny * corr * ima; b.x += nx * corr * imb; b.y += ny * corr * imb;
+      if (pass) continue;
+      const rvn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+      if (rvn < 0) {
+        const jimp = -(1 + 0.15) * rvn / sum;
+        a.vx -= jimp * ima * nx; a.vy -= jimp * ima * ny; b.vx += jimp * imb * nx; b.vy += jimp * imb * ny;
+        const amt = Math.min(Math.abs(rvn) * 0.0005, 0.22) * (reduceMotion ? 0.3 : 1);
+        if (amt > 0.01) { squish(a, Math.atan2(ny, nx), amt); squish(b, Math.atan2(-ny, -nx), amt); }
+        if (Math.abs(rvn) > 30) scheduleSave();
+      }
+    }
+  }
+  for (const n of arr) {
+    const off = n.off, v = n.offv, lim = n.h * 0.22;
+    for (let i = 0; i < N_BLOB; i++) {
+      const lap = off[(i + N_BLOB - 1) % N_BLOB] + off[(i + 1) % N_BLOB] - 2 * off[i];
+      v[i] += -0.09 * off[i] + 0.12 * lap; v[i] *= 0.87;
+    }
+    for (let i = 0; i < N_BLOB; i++) { off[i] += v[i]; if (off[i] > lim) off[i] = lim; else if (off[i] < -lim) off[i] = -lim; }
+  }
+  for (const l of links.values()) {
+    const A = nodes.get(l.from), B = nodes.get(l.to); if (!A || !B) continue;
+    const dx = B.x - A.x, dy = B.y - A.y, len = Math.hypot(dx, dy) || 1;
+    const tx = (A.x + B.x) / 2 - (dy / len) * len * 0.07, ty = (A.y + B.y) / 2 + (dx / len) * len * 0.07 + 14;
+    if (l.cx === null) { l.cx = tx; l.cy = ty; }
+    l.cvx += (tx - l.cx) * 0.05; l.cvy += (ty - l.cy) * 0.05; l.cvx *= 0.88; l.cvy *= 0.88; l.cx += l.cvx; l.cy += l.cvy;
+  }
+  if (linkDrag) {
+    const A = nodes.get(linkDrag.from);
+    if (!A) linkDrag = null;
+    else {
+      if (linkDrag.retract) {
+        linkDrag.px += (A.x - linkDrag.px) * 0.22; linkDrag.py += (A.y - linkDrag.py) * 0.22;
+        if (Math.hypot(A.x - linkDrag.px, A.y - linkDrag.py) < A.r) linkDrag = null;
+      }
+      if (linkDrag) {
+        const tx = (A.x + linkDrag.px) / 2, ty = (A.y + linkDrag.py) / 2 + 26;
+        linkDrag.cvx += (tx - linkDrag.cx) * 0.08; linkDrag.cvy += (ty - linkDrag.cy) * 0.08;
+        linkDrag.cvx *= 0.84; linkDrag.cvy *= 0.84; linkDrag.cx += linkDrag.cvx; linkDrag.cy += linkDrag.cvy;
+      }
+    }
+  }
+}
+
+/* ---------- camera ---------- */
+const toWorld = (sx, sy) => ({ x: (sx - W / 2) / cam.z + cam.x, y: (sy - H / 2) / cam.z + cam.y });
+const toScreen = (wx, wy) => ({ x: (wx - cam.x) * cam.z + W / 2, y: (wy - cam.y) * cam.z + H / 2 });
+const clampZ = (z) => Math.max(0.25, Math.min(2.6, z));
+function stopCamAnim() { cam.tx = cam.ty = cam.tz = null; }
+function zoomAt(sx, sy, f) {
+  stopCamAnim();
+  const before = toWorld(sx, sy); cam.z = clampZ(cam.z * f); const after = toWorld(sx, sy);
+  cam.x += before.x - after.x; cam.y += before.y - after.y; showZoom();
+}
+function fitView(instant) {
+  if (!nodes.size) { cam.tx = 0; cam.ty = 0; cam.tz = 1; return; }
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const pool = [...nodes.values()].filter((n) => !focus || n.project === focus);
+  for (const n of (pool.length ? pool : nodes.values())) { const [w, h] = SIZES[n.size]; x0 = Math.min(x0, n.x - w / 2); y0 = Math.min(y0, n.y - h / 2); x1 = Math.max(x1, n.x + w / 2); y1 = Math.max(y1, n.y + h / 2); }
+  for (const z of zones.values()) if (!focus || !z.project || z.project === focus) { x0 = Math.min(x0, z.x); y0 = Math.min(y0, z.y - 24); x1 = Math.max(x1, z.x + z.w); y1 = Math.max(y1, z.y + z.h); }
+  const padX = W < 640 ? 24 : 80, padTop = 90, padBot = W < 640 ? 90 : 110;
+  const z = clampZ(Math.min((W - padX * 2) / (x1 - x0), (H - padTop - padBot) / (y1 - y0), 1.3));
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2 - (padTop - padBot) / 2 / z;
+  if (instant) { cam.x = cx; cam.y = cy; cam.z = z; stopCamAnim(); showZoom(); } else { cam.tx = cx; cam.ty = cy; cam.tz = z; }
+}
+function updateCamera() {
+  if (cam.tz === null) return;
+  cam.x += (cam.tx - cam.x) * 0.14; cam.y += (cam.ty - cam.y) * 0.14; cam.z += (cam.tz - cam.z) * 0.14; showZoom();
+  if (Math.abs(cam.tz - cam.z) < 0.001 && Math.abs(cam.tx - cam.x) < 0.5 && Math.abs(cam.ty - cam.y) < 0.5) stopCamAnim();
+}
+let lastZ = -1;
+function showZoom() { const z = Math.round(cam.z * 100); if (z !== lastZ) { lastZ = z; $("zlevel").value = z + "%"; } }
+
+/* ---------- drawing ---------- */
+const bob = (n) => reduceMotion ? { x: 0, y: 0 } : { x: Math.sin(T * 0.5 + n.ph1) * 5, y: Math.cos(T * 0.41 + n.ph2) * 7 };
+const sc = (n) => n.pop * (1 - 0.28 * n.dim);
+let FADE = 1;
+function renderPos(n) { const b = bob(n); return { x: n.x + b.x + Math.sin(n.shakePh) * n.shake * 10, y: n.y + b.y }; }
+function blobPath(n, cx, cy, extra = 0) {
+  const S = n.samp, k = sc(n), pts = [];
+  for (let i = 0; i < N_BLOB; i++) { const j = i * 4, o = n.off[i] + extra; pts.push([cx + (S[j] + S[j + 2] * o) * k, cy + (S[j + 1] + S[j + 3] * o) * k]); }
+  ctx.beginPath();
+  const last = pts[N_BLOB - 1];
+  ctx.moveTo((last[0] + pts[0][0]) / 2, (last[1] + pts[0][1]) / 2);
+  for (let i = 0; i < N_BLOB; i++) { const p = pts[i], q = pts[(i + 1) % N_BLOB]; ctx.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2); }
+  ctx.closePath();
+}
+function wrap(text, maxW, maxLines) {
+  const words = (text || "Untitled").split(/\s+/).filter(Boolean), lines = [];
+  let cur = "";
+  for (const w of words) {
+    const t = cur ? cur + " " + w : w;
+    if (ctx.measureText(t).width <= maxW || !cur) cur = t; else { lines.push(cur); cur = w; }
+  }
+  if (cur) lines.push(cur);
+  if (lines.length > maxLines) { const rest = lines.slice(maxLines - 1).join(" "); lines.length = maxLines; lines[maxLines - 1] = rest; }
+  return lines.map((l) => { if (ctx.measureText(l).width <= maxW) return l; let s = l; while (s.length > 1 && ctx.measureText(s + "…").width > maxW) s = s.slice(0, -1); return s + "…"; });
+}
+function arrowHead(x, y, ang, size) {
+  ctx.beginPath();
+  ctx.moveTo(x - Math.cos(ang - 0.5) * size, y - Math.sin(ang - 0.5) * size);
+  ctx.lineTo(x, y);
+  ctx.lineTo(x - Math.cos(ang + 0.5) * size, y - Math.sin(ang + 0.5) * size);
+  ctx.stroke();
+}
+function edgePoint(n, p, towardX, towardY, gap) {
+  const dx = towardX - p.x, dy = towardY - p.y, hw = (n.w * sc(n)) / 2 + gap, hh = (n.h * sc(n)) / 2 + gap;
+  const t = Math.min(hw / Math.max(1e-6, Math.abs(dx)), hh / Math.max(1e-6, Math.abs(dy)));
+  return { x: p.x + dx * t, y: p.y + dy * t };
+}
+function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(DPR * cam.z, 0, 0, DPR * cam.z, DPR * (W / 2 - cam.x * cam.z), DPR * (H / 2 - cam.y * cam.z));
+  const tl = toWorld(0, 0), br = toWorld(W, H), sp = cam.z < 0.55 ? 96 : 48, dr = 0.9 / cam.z;
+  ctx.fillStyle = C.dot;
+  for (let x = Math.floor(tl.x / sp) * sp; x < br.x; x += sp) for (let y = Math.floor(tl.y / sp) * sp; y < br.y; y += sp) ctx.fillRect(x - dr, y - dr, dr * 2, dr * 2);
+  drawZones();
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  for (const l of links.values()) {
+    const A = nodes.get(l.from), B = nodes.get(l.to); if (!A || !B || l.cx === null) continue;
+    const pa = renderPos(A), pb = renderPos(B);
+    const s = edgePoint(A, pa, l.cx, l.cy, 6), e = edgePoint(B, pb, l.cx, l.cy, 9);
+    const picked = l.id === selectedLinkId, hover = l.id === hoverLinkId;
+    const hot = picked || hover || l.from === selectedId || l.to === selectedId;
+    ctx.globalAlpha = (A.done ? 0.35 : 1) * (1 - 0.8 * Math.max(A.dim, B.dim));
+    ctx.strokeStyle = hot ? C.lineHot : C.line; ctx.lineWidth = picked ? 2.6 : hot ? 1.6 : 1.2;
+    if (picked) { ctx.save(); ctx.shadowColor = C.lineHot; ctx.shadowBlur = 14 * cam.z * DPR; }
+    ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.quadraticCurveTo(l.cx, l.cy, e.x, e.y); ctx.stroke();
+    arrowHead(e.x, e.y, Math.atan2(e.y - l.cy, e.x - l.cx), picked ? 13 : hot ? 11 : 9);
+    if (picked) { ctx.restore(); ctx.lineWidth = 1.2;
+      const mx = 0.25 * s.x + 0.5 * l.cx + 0.25 * e.x, my = 0.25 * s.y + 0.5 * l.cy + 0.25 * e.y; // curve midpoint
+      ctx.fillStyle = C.lineHot; ctx.beginPath(); ctx.arc(mx, my, 4, 0, Math.PI * 2); ctx.fill(); }
+    ctx.globalAlpha = 1;
+  }
+  if (linkDrag) {
+    const A = nodes.get(linkDrag.from);
+    if (A) {
+      const pa = renderPos(A), s = edgePoint(A, pa, linkDrag.cx, linkDrag.cy, 6);
+      const tgt = linkDrag.target && nodes.get(linkDrag.target);
+      const e = tgt ? edgePoint(tgt, renderPos(tgt), linkDrag.cx, linkDrag.cy, 9) : { x: linkDrag.px, y: linkDrag.py };
+      ctx.strokeStyle = linkDrag.retract ? C.err : C.lineHot; ctx.lineWidth = 1.4; ctx.setLineDash([3, 6]);
+      ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.quadraticCurveTo(linkDrag.cx, linkDrag.cy, e.x, e.y); ctx.stroke(); ctx.setLineDash([]);
+      if (!linkDrag.retract) arrowHead(e.x, e.y, Math.atan2(e.y - linkDrag.cy, e.x - linkDrag.cx), 10);
+    }
+  }
+  const top = [];
+  for (const id of order) { const n = nodes.get(id); if (!n) continue; if (n.dragging || id === selectedId) top.push(n); else drawNode(n); }
+  top.forEach(drawNode);
+  if (marquee) {
+    const x = Math.min(marquee.x0, marquee.x1), y = Math.min(marquee.y0, marquee.y1), w = Math.abs(marquee.x1 - marquee.x0), h = Math.abs(marquee.y1 - marquee.y0);
+    ctx.globalAlpha = 0.08; ctx.fillStyle = C.lineHot; ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1;
+    ctx.setLineDash([4 / cam.z, 4 / cam.z]); ctx.strokeStyle = C.lineHot; ctx.lineWidth = 1 / cam.z; ctx.strokeRect(x, y, w, h); ctx.setLineDash([]);
+  }
+}
+function zoneTitle(z) { const k = [...nodes.values()].filter((n) => inZone(z, n)).length; return `${z.name.toUpperCase()}${z.project ? " · " + z.project.toUpperCase() : ""} · ${k}`; }
+function zoneTitleBox(z) {
+  ctx.font = `400 ${11 / cam.z}px ${MONO}`;
+  const w = ctx.measureText(zoneTitle(z)).width + 12 / cam.z, h = 20 / cam.z;
+  return { x: z.x, y: z.y - h - 3 / cam.z, w, h };
+}
+function drawZones() {
+  for (const z of zones.values()) {
+    const picked = z.id === selectedZoneId, a = 1 - 0.7 * z.dim, r = 6;
+    ctx.globalAlpha = a;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(z.x, z.y, z.w, z.h, r) : ctx.rect(z.x, z.y, z.w, z.h);
+    ctx.fillStyle = C.zone; ctx.fill();
+    ctx.strokeStyle = picked ? C.lineHot : C.rule; ctx.lineWidth = (picked ? 1.5 : 1) / cam.z; ctx.stroke();
+    const tb = zoneTitleBox(z);
+    if ("letterSpacing" in ctx) ctx.letterSpacing = (0.8 / cam.z).toFixed(2) + "px";
+    ctx.fillStyle = picked ? C.lineHot : C.muted; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText(zoneTitle(z), tb.x + 1 / cam.z, tb.y + tb.h / 2);
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+    if (z.id === hoverZoneId && !picked) { ctx.strokeStyle = C.line; ctx.lineWidth = 1.5 / cam.z; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(z.x, z.y, z.w, z.h, r) : ctx.rect(z.x, z.y, z.w, z.h); ctx.stroke(); }
+    if (picked || z.id === hoverZoneId) { // resize grip
+      const g = 10 / cam.z; ctx.fillStyle = picked ? C.lineHot : C.line;
+      ctx.fillRect(z.x + z.w - g / 2, z.y + z.h - g / 2, g, g);
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+const MONO = 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace';
+function ring(n, p, extra, color, width, alpha, dash) {
+  ctx.globalAlpha = alpha * FADE; if (dash) ctx.setLineDash(dash);
+  blobPath(n, p.x, p.y, extra); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
+  if (dash) ctx.setLineDash([]); ctx.globalAlpha = FADE;
+}
+function drawNode(n) {
+  FADE = 1 - 0.75 * n.dim; ctx.globalAlpha = FADE;
+  drawNodeInner(n);
+  FADE = 1; ctx.globalAlpha = 1;
+}
+function drawNodeInner(n) {
+  const p = renderPos(n), col = n.done ? C.done : C[n.priority];
+  const hot = n.dragging || n.id === selectedId;
+  blobPath(n, p.x, p.y); ctx.fillStyle = C.surface; ctx.fill();
+  // faded neon border: a soft glow under a thin line
+  if (!n.done) {
+    const breathe = n.status === "doing" && !reduceMotion ? 8 * (0.5 + 0.5 * Math.sin(T * 2.4 + n.ph1)) : 0;
+    ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = ((hot ? 26 : 14) + breathe) * cam.z * DPR;
+    ring(n, p, 0, col, 1.5, hot ? 0.95 : 0.7); ctx.restore();
+  }
+  ring(n, p, 0, col, 1.2, n.done ? 0.7 : 0.9);
+  ring(n, p, -4, col, 1, n.done ? 0.06 : 0.12);
+  if (isBlocked(n.id) && !n.done) ring(n, p, 8, C.line, 1, 0.9, [3, 5]);
+  const picked = multi.has(n.id);
+  if (picked) {
+    ctx.globalAlpha = 0.14 * FADE; blobPath(n, p.x, p.y); ctx.fillStyle = C.lineHot; ctx.fill(); ctx.globalAlpha = FADE;
+    ctx.save(); ctx.shadowColor = C.lineHot; ctx.shadowBlur = 18 * cam.z * DPR; ring(n, p, 5, C.lineHot, 2, 1); ctx.restore();
+    const hw = (n.w * sc(n)) / 2, hh = (n.h * sc(n)) / 2, cx = p.x - hw + 18, cy = p.y - hh;
+    ctx.fillStyle = C.lineHot; ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = C.surface; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx - 4, cy); ctx.lineTo(cx - 1, cy + 3); ctx.lineTo(cx + 4, cy - 3); ctx.stroke();
+  } else if (n.id === selectedId) ring(n, p, 6, C.ink, 1, 0.85);
+  if (n.id === pendingLinkFrom) ring(n, p, 6, C.lineHot, 1.2, 1, [4, 4]);
+  if (linkDrag && linkDrag.target === n.id) ring(n, p, 7, C.lineHot, 1.5, 1);
+  if (n.flash > 0.03) { ctx.save(); ctx.shadowColor = C.err; ctx.shadowBlur = 18 * cam.z * DPR; ring(n, p, 3, C.err, 1.5, n.flash); ctx.restore(); }
+  const hw = (n.w * sc(n)) / 2, hh = (n.h * sc(n)) / 2;
+  if (n.done) { // a bare check centred on the rounded top-right corner of the border
+    const rc = Math.min(16, n.h * 0.28) * sc(n), cx = p.x + hw - rc + rc * Math.SQRT1_2, cy = p.y - hh + rc - rc * Math.SQRT1_2;
+    const path = () => { ctx.beginPath(); ctx.moveTo(cx - 6, cy + 0.5); ctx.lineTo(cx - 1.8, cy + 4.5); ctx.lineTo(cx + 6.5, cy - 5); };
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    path(); ctx.strokeStyle = C.bg; ctx.lineWidth = 6; ctx.stroke();      // cut the border under the check
+    path(); ctx.strokeStyle = C.good; ctx.lineWidth = 2.2; ctx.stroke();
+  }
+  if (n.status === "doing") { // a small turning arc on the rounded top-right corner
+    const rc = Math.min(16, n.h * 0.28) * sc(n), cx = p.x + hw - rc + rc * Math.SQRT1_2, cy = p.y - hh + rc - rc * Math.SQRT1_2;
+    const a0 = reduceMotion ? 0 : T * 4;
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.strokeStyle = C.bg; ctx.lineWidth = 6; ctx.stroke();
+    ctx.globalAlpha = 0.3 * FADE; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.strokeStyle = C.lineHot; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.globalAlpha = FADE; ctx.beginPath(); ctx.arc(cx, cy, 6, a0, a0 + Math.PI * 1.2); ctx.stroke();
+  }
+  if (hh < 14) return;
+  const pad = 13, fs = Math.max(11.5, Math.min(15, n.h * 0.18)), lh = fs * 1.22, bfs = Math.max(8.5, fs * 0.66);
+  const top = p.y - hh + pad * 0.85, by = p.y + hh - pad * 0.8;
+  const maxLines = Math.max(2, Math.floor((by - bfs - 2 - top) / lh));
+  if ("letterSpacing" in ctx) ctx.letterSpacing = (-fs * 0.015).toFixed(2) + "px";
+  ctx.font = `500 ${fs}px ${SANS}`; ctx.textAlign = "left"; ctx.textBaseline = "top";
+  ctx.fillStyle = n.done ? C.muted : C.ink;
+  wrap(n.title, hw * 2 - pad * 2, maxLines).forEach((ln, i) => ctx.fillText(ln, p.x - hw + pad, top + i * lh));
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.7px";
+  ctx.font = `400 ${bfs}px ${MONO}`; ctx.textBaseline = "bottom";
+  ctx.fillStyle = C.muted; ctx.fillText(n.size, p.x - hw + pad, by);
+  if (n.description) { // three short lines = has a description
+    const x = p.x - hw + pad + ctx.measureText(n.size).width + bfs * 0.9, y = by - bfs * 0.85, lw = bfs * 0.95;
+    ctx.fillRect(x, y, lw, 1); ctx.fillRect(x, y + bfs * 0.3, lw, 1); ctx.fillRect(x, y + bfs * 0.6, lw * 0.6, 1);
+  }
+  ctx.textAlign = "right";
+  if (n.done) ctx.fillText("DONE", p.x + hw - pad, by);
+  else { ctx.fillStyle = col; ctx.fillText(n.priority.toUpperCase(), p.x + hw - pad, by); }
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+}
+
+/* ---------- hit testing ---------- */
+function nodeAt(wx, wy, exclude) {
+  for (let i = order.length - 1; i >= 0; i--) {
+    const n = nodes.get(order[i]); if (!n || n.id === exclude) continue;
+    const p = renderPos(n); if (Math.abs(wx - p.x) < (n.w * sc(n)) / 2 + 4 && Math.abs(wy - p.y) < (n.h * sc(n)) / 2 + 4) return n;
+  }
+  return null;
+}
+function linkAt(wx, wy) {
+  const tol = 14 / cam.z;
+  for (const l of links.values()) {
+    const A = nodes.get(l.from), B = nodes.get(l.to); if (!A || !B || l.cx === null) continue;
+    const pa = renderPos(A), pb = renderPos(B);
+    for (let k = 0; k <= 20; k++) {
+      const t = k / 20, u = 1 - t;
+      const x = u * u * pa.x + 2 * u * t * l.cx + t * t * pb.x, y = u * u * pa.y + 2 * u * t * l.cy + t * t * pb.y;
+      if (Math.hypot(wx - x, wy - y) < tol && !nodeAt(wx, wy)) return l;
+    }
+  }
+  return null;
+}
+
+function zoneAt(wx, wy) {
+  const list = [...zones.values()].reverse();
+  for (const z of list) { const g = 12 / cam.z; if (Math.abs(wx - (z.x + z.w)) < g && Math.abs(wy - (z.y + z.h)) < g) return { z, part: "resize" }; }
+  for (const z of list) { const b = zoneTitleBox(z); if (wx >= b.x && wx <= b.x + b.w && wy >= b.y && wy <= b.y + b.h + 3 / cam.z) return { z, part: "title" }; }
+  const e = 7 / cam.z; // grab band on each side of the outline
+  for (const z of list) {
+    const inX = wx > z.x - e && wx < z.x + z.w + e, inY = wy > z.y - e && wy < z.y + z.h + e;
+    if ((inY && (Math.abs(wx - z.x) < e || Math.abs(wx - z.x - z.w) < e)) || (inX && (Math.abs(wy - z.y) < e || Math.abs(wy - z.y - z.h) < e))) return { z, part: "edge" };
+  }
+  for (const z of list) if (wx > z.x && wx < z.x + z.w && wy > z.y && wy < z.y + z.h) return { z, part: "body" };
+  return null;
+}
+/* ---------- linking ---------- */
+function tryLink(fromId, toId) {
+  const A = nodes.get(fromId), B = nodes.get(toId);
+  if (!A || !B) return false;
+  let msg = null;
+  if (fromId === toId) msg = "A task can't wait for itself.";
+  else if (linkBetween(fromId, toId)) msg = "These tasks are already linked.";
+  else if (linkBetween(toId, fromId)) msg = "These tasks are already linked the other way.";
+  else if (reaches(toId, fromId)) msg = "That arrow would make a loop.";
+  if (msg) { shakeNode(A); shakeNode(B); toast(msg, true); return false; }
+  createLink(fromId, toId);
+  const ang = Math.atan2(B.y - A.y, B.x - A.x);
+  squish(B, ang + Math.PI, 0.2); squish(A, ang, 0.1); B.vx += Math.cos(ang) * 60; B.vy += Math.sin(ang) * 60;
+  return true;
+}
+
+/* ---------- pointer + keyboard ---------- */
+function startLinkDrag(n, w) {
+  gesture = { type: "link", id: n.id };
+  linkDrag = { from: n.id, px: w.x, py: w.y, cx: n.x, cy: n.y, cvx: 0, cvy: 0, target: null, retract: false };
+  squish(n, Math.atan2(w.y - n.y, w.x - n.x), 0.08);
+}
+const pointers = new Map();
+let gesture = null;
+canvas.addEventListener("pointerdown", (e) => {
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  stopCamAnim();
+  if (pointers.size === 2) {
+    if (gesture && gesture.type === "drag") { const n = nodes.get(gesture.id); if (n) n.dragging = false; scheduleSave(); }
+    if (gesture && gesture.type === "gdrag") { gesture.ids.forEach((id) => { const m = nodes.get(id); if (m) m.dragging = false; }); scheduleSave(); }
+    marquee = null;
+    if (linkDrag && !linkDrag.retract) linkDrag.retract = true;
+    const [a, b] = [...pointers.values()];
+    gesture = { type: "pinch", d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+    return;
+  }
+  if (pointers.size > 2) return;
+  const w = toWorld(e.clientX, e.clientY), n = nodeAt(w.x, w.y), meta = e.metaKey || e.ctrlKey;
+  if (drawingZone) { marquee = { x0: w.x, y0: w.y, x1: w.x, y1: w.y, zone: true }; gesture = { type: "zdraw" }; return; }
+  if (meta) {
+    if (pendingLinkFrom) { pendingLinkFrom = null; updateLinkButton(); }
+    if (n) gesture = { type: "metapress", id: n.id, sx: e.clientX, sy: e.clientY };
+    else { marquee = { x0: w.x, y0: w.y, x1: w.x, y1: w.y }; gesture = { type: "marquee" }; }
+    return;
+  }
+  if (n && multi.size > 1 && multi.has(n.id) && !readOnly) {
+    const offs = {}; for (const id of multi) { const m = nodes.get(id); if (m) offs[id] = [w.x - m.x, w.y - m.y]; }
+    gesture = { type: "gpress", id: n.id, ids: [...multi], offs, sx: e.clientX, sy: e.clientY };
+    return;
+  }
+  if (n) {
+    if (pendingLinkFrom) {
+      const from = pendingLinkFrom; pendingLinkFrom = null; updateLinkButton();
+      if (from !== n.id) { tryLink(from, n.id); gesture = { type: "none" }; return; }
+    }
+    if ((connectMode || e.shiftKey) && !readOnly) startLinkDrag(n, w);
+    else gesture = { type: "press", id: n.id, sx: e.clientX, sy: e.clientY, ox: w.x - n.x, oy: w.y - n.y };
+  } else {
+    if (pendingLinkFrom) { pendingLinkFrom = null; updateLinkButton(); }
+    const l = linkAt(w.x, w.y), zh = l ? null : zoneAt(w.x, w.y);
+    if (l) gesture = { type: "linkpress", id: l.id };
+    else if (zh && zh.part === "resize" && !readOnly) gesture = { type: "zresize", id: zh.z.id, sx: w.x, sy: w.y, w0: zh.z.w, h0: zh.z.h };
+    else if (zh && (zh.part === "title" || zh.part === "edge")) {
+      const members = [...nodes.values()].filter((n) => inZone(zh.z, n)).map((n) => ({ id: n.id, x: n.x, y: n.y }));
+      gesture = { type: "zpress", part: zh.part, id: zh.z.id, sx: e.clientX, sy: e.clientY, wx: w.x, wy: w.y, x0: zh.z.x, y0: zh.z.y, members };
+    } else gesture = { type: "pan", sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y, moved: false, zoneTap: zh ? zh.z.id : null };
+  }
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  const w = toWorld(e.clientX, e.clientY);
+  if (!gesture) {
+    const overNode = nodeAt(w.x, w.y), l = overNode ? null : linkAt(w.x, w.y);
+    hoverLinkId = l ? l.id : null;
+    const zh = overNode || l ? null : zoneAt(w.x, w.y); hoverZoneId = zh && zh.part !== "body" ? zh.z.id : null;
+    if (drawingZone) { canvas.style.cursor = ZONE_CURSOR; return; }
+    canvas.style.cursor = overNode ? (connectMode ? "crosshair" : "grab") : l ? "pointer" : drawingZone ? ZONE_CURSOR : zh && zh.part === "resize" ? "nwse-resize" : zh && (zh.part === "title" || zh.part === "edge") ? "move" : "default"; return;
+  }
+  switch (gesture.type) {
+    case "pinch": {
+      if (pointers.size < 2) return;
+      const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      zoomAt(mx, my, d / gesture.d); cam.x -= (mx - gesture.mx) / cam.z; cam.y -= (my - gesture.my) / cam.z;
+      gesture.d = d; gesture.mx = mx; gesture.my = my; break;
+    }
+    case "metapress": {
+      if (Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) < 5) return;
+      const n = nodes.get(gesture.id); if (!n || readOnly) { gesture = null; return; }
+      startLinkDrag(n, w);
+    } // falls through
+    case "link": {
+      if (!linkDrag) return; linkDrag.px = w.x; linkDrag.py = w.y;
+      const t = nodeAt(w.x, w.y, linkDrag.from), prev = linkDrag.target;
+      linkDrag.target = t ? t.id : null;
+      if (t && t.id !== prev) squish(t, Math.atan2(t.y - w.y, t.x - w.x) + Math.PI, 0.05);
+      break;
+    }
+    case "press": {
+      if (Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) < 5) return;
+      const n = nodes.get(gesture.id); if (!n) { gesture = null; return; }
+      if (readOnly) { gesture = { type: "pan", sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y, moved: true }; return; }
+      checkpoint(); gesture.type = "drag"; n.dragging = true; n.tx = n.x; n.ty = n.y; order = order.filter((x) => x !== n.id).concat(n.id);
+      canvas.style.cursor = "grabbing";
+    } // falls through
+    case "drag": { const n = nodes.get(gesture.id); if (n) { n.tx = w.x - gesture.ox; n.ty = w.y - gesture.oy; } break; }
+    case "gpress":
+      if (Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) < 5) return;
+      checkpoint(); gesture.type = "gdrag"; canvas.style.cursor = "grabbing";
+      for (const id of gesture.ids) { const n = nodes.get(id); if (n) { n.dragging = true; order = order.filter((x) => x !== id).concat(id); } }
+      // falls through
+    case "gdrag":
+      for (const id of gesture.ids) { const n = nodes.get(id), o = gesture.offs[id]; if (n && o) { n.tx = w.x - o[0]; n.ty = w.y - o[1]; } }
+      break;
+    case "marquee": case "zdraw": marquee.x1 = w.x; marquee.y1 = w.y; break;
+    case "zpress":
+      if (Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) < 4 || readOnly) return;
+      checkpoint(); gesture.type = "zdrag"; canvas.style.cursor = "grabbing";
+      for (const m of gesture.members) { const n = nodes.get(m.id); if (n) n.dragging = true; }
+      // falls through
+    case "zdrag": {
+      const z = zones.get(gesture.id); if (!z) return;
+      const dx = w.x - gesture.wx, dy = w.y - gesture.wy;
+      z.x = gesture.x0 + dx; z.y = gesture.y0 + dy;
+      for (const m of gesture.members) { const n = nodes.get(m.id); if (n) { n.tx = m.x + dx; n.ty = m.y + dy; } }
+      break;
+    }
+    case "zresize": {
+      if (!gesture.cp) { gesture.cp = true; checkpoint(); }
+      const z = zones.get(gesture.id); if (!z) return;
+      z.w = Math.max(200, gesture.w0 + (w.x - gesture.sx)); z.h = Math.max(120, gesture.h0 + (w.y - gesture.sy)); canvas.style.cursor = "nwse-resize";
+      break;
+    }
+    case "pan":
+      if (Math.hypot(e.clientX - gesture.sx, e.clientY - gesture.sy) > 4) gesture.moved = true;
+      cam.x = gesture.cx - (e.clientX - gesture.sx) / cam.z; cam.y = gesture.cy - (e.clientY - gesture.sy) / cam.z;
+      canvas.style.cursor = "grabbing"; break;
+  }
+});
+function endPointer(e, cancelled) {
+  pointers.delete(e.pointerId);
+  if (!gesture) return;
+  if (gesture.type === "pinch") { if (pointers.size === 0) gesture = null; return; }
+  const g = gesture; gesture = null; canvas.style.cursor = "default";
+  if (g.type === "gdrag") { for (const id of g.ids) { const m = nodes.get(id); if (m) { m.dragging = false; const sp = Math.hypot(m.vx, m.vy); if (sp > 500) { m.vx *= 500 / sp; m.vy *= 500 / sp; } } } scheduleSave(); return; }
+  if (g.type === "zdraw") {
+    const m = marquee; marquee = null; setDrawZone(false);
+    if (cancelled || !m) return;
+    let x = Math.min(m.x0, m.x1), y = Math.min(m.y0, m.y1), w = Math.abs(m.x1 - m.x0), h = Math.abs(m.y1 - m.y0);
+    if (w < 40 / cam.z || h < 40 / cam.z) { w = 520; h = 340; x = m.x0 - w / 2; y = m.y0 - h / 2; } // a click makes a default-size zone
+    createZone({ x, y, w: Math.max(200, w), h: Math.max(120, h) });
+    return;
+  }
+  if (g.type === "zdrag") { for (const m of g.members) { const n = nodes.get(m.id); if (n) n.dragging = false; } const z = zones.get(g.id); if (z) writeZone(z, false); scheduleSave(); return; }
+  if (g.type === "zresize") { const z = zones.get(g.id); if (z) writeZone(z, false); return; }
+  if (g.type === "zpress") {
+    clearMulti(); select(null); selectZone(g.id);
+    const now = performance.now();
+    if (g.part === "title" && lastTitleTap.id === g.id && now - lastTitleTap.t < 400) { lastTitleTap = { id: null, t: 0 }; renameZone(g.id); }
+    else lastTitleTap = { id: g.id, t: now };
+    return;
+  }
+  if (g.type === "marquee") {
+    if (!cancelled && marquee) {
+      const x0 = Math.min(marquee.x0, marquee.x1), x1 = Math.max(marquee.x0, marquee.x1), y0 = Math.min(marquee.y0, marquee.y1), y1 = Math.max(marquee.y0, marquee.y1);
+      if (selectedId && !multi.has(selectedId)) multi.add(selectedId);
+      for (const m of nodes.values()) if (m.dim < 0.5 && m.x + m.w / 2 > x0 && m.x - m.w / 2 < x1 && m.y + m.h / 2 > y0 && m.y - m.h / 2 < y1) { if (!multi.has(m.id)) poke(m, 0.05); multi.add(m.id); }
+      multiChanged();
+    }
+    marquee = null; return;
+  }
+  if (cancelled) { if (g.type === "drag") { const n = nodes.get(g.id); if (n) n.dragging = false; } if (linkDrag) linkDrag.retract = true; return; }
+  if (g.type === "gpress") { clearMulti(); const n = nodes.get(g.id); if (n) { poke(n, 0.1); select(n.id); } return; }
+  if (g.type === "metapress") { const n = nodes.get(g.id); if (n) { toggleMulti(n.id); poke(n, 0.06); } return; }
+  if (g.type === "press") { clearMulti(); const n = nodes.get(g.id); if (n) { poke(n, 0.1); select(n.id); } }
+  else if (g.type === "drag") {
+    const n = nodes.get(g.id);
+    if (n) { n.dragging = false; const sp = Math.hypot(n.vx, n.vy), max = 500; if (sp > max) { n.vx *= max / sp; n.vy *= max / sp; } squish(n, Math.atan2(n.vy, n.vx), Math.min(sp * 0.00008, 0.1)); }
+    scheduleSave();
+  } else if (g.type === "link") {
+    if (linkDrag && linkDrag.target) { const ok = tryLink(linkDrag.from, linkDrag.target); if (ok) linkDrag = null; else linkDrag.retract = true; }
+    else if (linkDrag) linkDrag.retract = true;
+  } else if (g.type === "linkpress") selectLink(g.id);
+  else if (g.type === "pan" && !g.moved) { clearMulti(); select(null); selectLink(null); selectZone(g.zoneTap); }
+}
+canvas.addEventListener("pointerup", (e) => endPointer(e, false));
+canvas.addEventListener("pointerleave", () => { hoverLinkId = null; });
+canvas.addEventListener("pointercancel", (e) => endPointer(e, true));
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const k = e.ctrlKey ? 0.012 : (e.deltaMode ? 0.05 : 0.0016);
+  zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * k));
+}, { passive: false });
+addEventListener("keydown", (e) => {
+  const t = e.target; if (t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT" || t.tagName === "SELECT")) { if (e.key === "Escape") t.blur(); return; }
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === "z") { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); return; }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === "escape" && multi.size) { clearMulti(); return; }
+  if (k === "escape" && drawingZone) { setDrawZone(false); return; }
+  if (k === "escape" && selectedZoneId) { selectZone(null); return; }
+  if ((k === "delete" || k === "backspace") && selectedZoneId && !readOnly) { e.preventDefault(); removeZone(selectedZoneId); toast("Deleted the zone. Its tasks stay."); return; }
+  if ((k === "delete" || k === "backspace") && selectedLinkId && !readOnly) { e.preventDefault(); removeLink(selectedLinkId); toast("Removed the arrow."); return; }
+  if ((k === "delete" || k === "backspace") && multi.size > 1) { e.preventDefault(); bulkDelete(); return; }
+  if ((k === "delete" || k === "backspace") && selectedId && !readOnly) { e.preventDefault(); const id = selectedId; removeTask(id); toast("Deleted 1 task."); return; }
+  if (k === "escape") { pendingLinkFrom = null; updateLinkButton(); if (connectMode) setConnect(false); select(null); selectLink(null); }
+  else if (k === "n") { e.preventDefault(); addAtCenter(); }
+  else if (k === "c") setConnect(!connectMode);
+  else if (k === "z") setDrawZone(!drawingZone);
+  else if (k === "0") fitView(false);
+  else if (k === "t") toggleTheme();
+  else if (k === "=" || k === "+") zoomAt(W / 2, H / 2, 1.2);
+  else if (k === "-") zoomAt(W / 2, H / 2, 1 / 1.2);
+});
+
+/* ---------- UI ---------- */
+/* double-tap a zone name: edit it in place */
+let lastTitleTap = { id: null, t: 0 }, renamingZone = null;
+function renameZone(id) {
+  const z = zones.get(id); if (!z || readOnly) return;
+  const box = zoneTitleBox(z), tl = toScreen(box.x, box.y), inp = $("zone-rename");
+  renamingZone = id; checkpoint();
+  inp.value = z.name; inp.style.left = tl.x + "px"; inp.style.top = tl.y + "px";
+  inp.style.width = Math.max(160, box.w * cam.z + 40) + "px"; inp.hidden = false; inp.focus(); inp.select();
+}
+function endRename(save) {
+  const inp = $("zone-rename"), z = zones.get(renamingZone);
+  if (inp.hidden) return;
+  inp.hidden = true;
+  if (save && z) { const v = inp.value.trim(); if (v && v !== z.name) { z.name = v.slice(0, 60); writeZone(z, false); if (selectedZoneId === z.id) $("zone-name").value = z.name; } }
+  renamingZone = null; canvas.focus();
+}
+function selectZone(id) {
+  selectedZoneId = id && zones.has(id) ? id : null;
+  $("zone-editor").hidden = !selectedZoneId;
+  if (!selectedZoneId) return;
+  select(null); selectLink(null); selectedZoneId = id; $("zone-editor").hidden = false;
+  fillZoneEditor(true);
+}
+function fillZoneEditor(force) {
+  const z = selectedZoneId && zones.get(selectedZoneId); if (!z) return;
+  const ta = $("zone-name"); if (force || document.activeElement !== ta) ta.value = z.name;
+  ta.readOnly = readOnly;
+  const k = [...nodes.values()].filter((n) => inZone(z, n)).length;
+  $("zone-eyebrow").textContent = `Zone · ${k} task${k === 1 ? "" : "s"}`;
+  const box = $("zone-proj"), opts = [["", "None"], ...projectList().map((p) => [p, p])];
+  box.textContent = "";
+  opts.forEach(([v, t]) => { const b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "radio"); b.dataset.v = v; b.textContent = t;
+    b.setAttribute("aria-checked", String((z.project || "") === v)); b.disabled = readOnly; box.append(b); });
+}
+function setZoneProject(v) { const z = zones.get(selectedZoneId); if (!z) return; checkpoint(); z.project = v || null; writeZone(z, false); fillZoneEditor(false); }
+function toggleMulti(id) {
+  if (selectedId && !multi.has(selectedId) && selectedId !== id) multi.add(selectedId);
+  if (multi.has(id)) multi.delete(id); else multi.add(id);
+  multiChanged();
+}
+function clearMulti() { if (!multi.size) return; multi.clear(); multiChanged(); }
+function multiChanged() {
+  for (const id of [...multi]) if (!nodes.has(id)) multi.delete(id);
+  const many = multi.size > 1;
+  if (many) { selectedId = null; $("editor").hidden = true; selectLink(null); }
+  else if (multi.size === 1) { const only = [...multi][0]; multi.clear(); select(only); }
+  $("bulkbar").hidden = !many;
+  if (many) { $("bulk-text").textContent = `${multi.size} selected · drag one to move all · Del deletes`; $("bulk-del").textContent = `Delete ${multi.size}`; }
+}
+function bulkDelete() {
+  if (readOnly || multi.size < 2) return;
+  const ids = [...multi]; multi.clear(); ids.forEach(removeTask); multiChanged();
+  toast(`Deleted ${ids.length} tasks.`);
+}
+function addAtCenter() {
+  if (readOnly) return;
+  const c = toWorld(W / 2, H / 2);
+  createTask(c.x + (Math.random() - 0.5) * 40, c.y + (Math.random() - 0.5) * 40);
+  if (mode !== "loading") $("empty").hidden = true;
+}
+function setConnect(on) {
+  connectMode = on && !readOnly; $("connect").setAttribute("aria-pressed", String(connectMode));
+  if (connectMode) toast("Drag from a task to the task that waits for it.");
+}
+function setReadOnly(on) {
+  readOnly = on;
+  ["add", "connect", "add-zone"].forEach((id) => ($(id).hidden = on));
+  $("ed-actions").hidden = on; $("linkbar-del").hidden = on;
+  $("ed-title").readOnly = on;
+  document.querySelectorAll(".seg button").forEach((b) => (b.disabled = on));
+  if (on) setConnect(false);
+}
+function select(id) {
+  selectedId = id && nodes.has(id) ? id : null;
+  if (selectedId) { selectLink(null); if (selectedZoneId) selectZone(null); }
+  $("ed-confirm").hidden = true;
+  $("editor").hidden = !selectedId;
+  fillEditor(true);
+}
+function selectLink(id) {
+  selectedLinkId = id && links.has(id) ? id : null;
+  const bar = $("linkbar"); bar.hidden = !selectedLinkId;
+  if (selectedLinkId) {
+    select(null); selectedLinkId = id; bar.hidden = false;
+    const l = links.get(id); $("linkbar-text").textContent = `${nodes.get(l.from)?.title || "?"} → ${nodes.get(l.to)?.title || "?"} · Del removes`;
+  }
+}
+function fillEditor(force) {
+  const n = selectedId && nodes.get(selectedId); if (!n) return;
+  const ta = $("ed-title");
+  if (force || document.activeElement !== ta) ta.value = n.title;
+  const da = $("ed-desc"); if (force || document.activeElement !== da) da.value = n.description;
+  da.readOnly = readOnly;
+  $("ed-eyebrow").textContent = n.done ? "Task · done" : n.status === "doing" ? "Task · in progress" : isBlocked(n.id) ? "Task · waiting" : "Task · " + n.priority;
+  document.querySelectorAll("#ed-pri button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.v === n.priority)));
+  document.querySelectorAll("#ed-size button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.v === n.size)));
+  document.querySelectorAll("#ed-status button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.v === n.status)));
+  const pj = $("ed-proj"), names = projectList();
+  if (pj.dataset.key !== names.join("|") + "#" + n.project) {
+    pj.dataset.key = names.join("|") + "#" + n.project; pj.textContent = "";
+    names.forEach((name) => { const b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "radio"); b.dataset.v = name;
+      b.textContent = name; b.setAttribute("aria-checked", String(name === n.project)); b.disabled = readOnly; pj.append(b); });
+  }
+  const deps = $("ed-deps"); deps.textContent = "";
+  const section = (label, ls, key) => {
+    if (!ls.length) return;
+    const wrapEl = document.createElement("div"), lab = document.createElement("div"), chips = document.createElement("div");
+    lab.className = "label"; lab.textContent = label; chips.className = "chips";
+    ls.forEach((l) => {
+      const other = nodes.get(l[key]), chip = document.createElement("span"), s = document.createElement("span");
+      chip.className = "chip"; s.textContent = other.title + (other.done ? " ✓" : ""); chip.append(s);
+      if (!readOnly) { const x = document.createElement("button"); x.type = "button"; x.textContent = "×"; x.setAttribute("aria-label", "Remove arrow to " + other.title); x.onclick = () => removeLink(l.id); chip.append(x); }
+      chips.append(chip);
+    });
+    wrapEl.append(lab, chips); deps.append(wrapEl);
+  };
+  section("Waits for", prereqs(n.id), "from");
+  section("Blocks", dependents(n.id), "to");
+  updateLinkButton();
+}
+function updateLinkButton() { $("ed-link").textContent = pendingLinkFrom ? "Now tap the task that waits for this one" : "Link to another task"; }
+let uiTimer = null;
+function uiChanged() {
+  if (uiTimer) return;
+  uiTimer = requestAnimationFrame(() => {
+    uiTimer = null;
+    renderProjects();
+    const all = [...nodes.values()], doing = all.filter((n) => n.status === "doing").length, done = all.filter((n) => n.done).length;
+    $("meta").textContent = mode === "loading" ? "loading" : `${all.length - doing - done} to do · ${doing} in progress · ${done} done` + (mode === "local" ? " · this browser" : "");
+    if (selectedId && !nodes.has(selectedId)) select(null); else fillEditor(false);
+    if (selectedLinkId && !links.has(selectedLinkId)) selectLink(null);
+    if (selectedZoneId) fillZoneEditor(false);
+    if (mode !== "loading") {
+      const empty = nodes.size === 0; $("empty").hidden = !empty;
+      if (empty) { $("empty-title").textContent = "No tasks yet"; $("empty-text").textContent = readOnly ? "Tasks appear here when the owner adds them." : "Add a task and it floats in here."; $("empty-add").hidden = readOnly; }
+    }
+    const list = $("a11y-list"); list.textContent = "";
+    for (const id of order) { const n = nodes.get(id); if (!n) continue;
+      const li = document.createElement("li"), b = document.createElement("button"); b.type = "button";
+      b.textContent = `${n.title}, ${n.priority} priority, size ${n.size}${n.done ? ", done" : ""}`;
+      b.onclick = () => { select(id); const p = nodes.get(id); cam.tx = p.x; cam.ty = p.y; cam.tz = cam.z; };
+      li.append(b); list.append(li); }
+  });
+}
+function renderProjects() {
+  const box = $("projects"), names = projectList(), key = names.join("|") + "#" + (focus || "");
+  if (box.dataset.key === key) return;
+  box.dataset.key = key; box.textContent = "";
+  ["All", ...names].forEach((name, i) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.setAttribute("role", "radio");
+    const val = i === 0 ? null : name; b.textContent = name;
+    b.setAttribute("aria-checked", String(val === focus)); b.onclick = () => setFocus(val); box.append(b);
+  });
+}
+function setFocus(name) {
+  focus = name;
+  try { if (name) localStorage.setItem(FOCUS_KEY, name); else localStorage.removeItem(FOCUS_KEY); } catch (e) {}
+  for (const n of nodes.values()) if (!focus || n.project === focus) poke(n, 0.05);
+  renderProjects();
+}
+function toast(msg, err) {
+  const box = $("toasts"); box.textContent = "";
+  const t = document.createElement("div"); t.className = "toast" + (err ? " err" : ""); t.textContent = msg; box.append(t);
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.remove(), 2600);
+}
+
+$("add-zone").onclick = () => setDrawZone(!drawingZone);
+let zoneTimer = null;
+$("zone-name").addEventListener("focus", () => checkpoint());
+$("ed-title").addEventListener("focus", () => checkpoint());
+$("ed-desc").addEventListener("focus", () => checkpoint());
+$("zone-name").addEventListener("input", (e) => {
+  const z = zones.get(selectedZoneId); if (!z) return; z.name = e.target.value || "Zone";
+  clearTimeout(zoneTimer); zoneTimer = setTimeout(() => writeZone(z, false), 500);
+});
+$("zone-name").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } });
+$("zone-proj").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setZoneProject(b.dataset.v); });
+$("zone-proj-new").addEventListener("keydown", (e) => { if (e.key !== "Enter") return; e.preventDefault(); const v = e.target.value.trim().slice(0, 40); if (v) { setZoneProject(v); e.target.value = ""; } });
+$("zone-del").onclick = () => { if (selectedZoneId) removeZone(selectedZoneId); };
+$("zone-close").onclick = () => selectZone(null);
+$("zone-rename").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); endRename(true); } else if (e.key === "Escape") { e.preventDefault(); endRename(false); } });
+$("zone-rename").addEventListener("blur", () => endRename(true));
+canvas.addEventListener("wheel", () => endRename(true), { passive: true });
+$("add").onclick = addAtCenter; $("empty-add").onclick = addAtCenter;
+$("connect").onclick = () => setConnect(!connectMode);
+$("fit").onclick = () => fitView(false);
+function toggleTheme() {
+  const light = document.documentElement.dataset.theme !== "light";
+  if (light) document.documentElement.dataset.theme = "light"; else document.documentElement.dataset.theme = "dark";
+  try { localStorage.setItem(THEME_KEY, light ? "light" : "dark"); } catch (e) {}
+  showThemeLabel();
+}
+function showThemeLabel() { $("theme").firstChild.nodeValue = (document.documentElement.dataset.theme === "light" ? "Dark" : "Light") + " "; }
+$("theme").onclick = toggleTheme; showThemeLabel();
+$("zin").onclick = () => zoomAt(W / 2, H / 2, 1.25);
+$("zout").onclick = () => zoomAt(W / 2, H / 2, 1 / 1.25);
+$("ed-close").onclick = () => select(null);
+let titleTimer = null;
+$("ed-title").addEventListener("input", (e) => {
+  const id = selectedId, n = nodes.get(id); if (!n) return;
+  n.title = e.target.value.replace(/\s+/g, " ").trimStart(); poke(n, 0.02);
+  clearTimeout(titleTimer); titleTimer = setTimeout(() => patchTask(id, { title: n.title.trim() || "Untitled" }, true), 500);
+});
+$("ed-title").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } });
+let descTimer = null;
+$("ed-desc").addEventListener("input", (e) => {
+  const id = selectedId, n = nodes.get(id); if (!n) return;
+  n.description = e.target.value;
+  clearTimeout(descTimer); descTimer = setTimeout(() => patchTask(id, { description: n.description.trim() }, true), 600);
+});
+$("ed-pri").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && selectedId) { patchTask(selectedId, { priority: b.dataset.v }); poke(nodes.get(selectedId), 0.12); } });
+$("ed-size").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && selectedId) patchTask(selectedId, { size: b.dataset.v }); });
+$("ed-proj").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && selectedId) { patchTask(selectedId, { project: b.dataset.v }); poke(nodes.get(selectedId), 0.1); } });
+$("ed-proj-new").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return; e.preventDefault();
+  const v = e.target.value.trim().slice(0, 40); if (!v || !selectedId) return;
+  patchTask(selectedId, { project: v }); e.target.value = ""; poke(nodes.get(selectedId), 0.12);
+});
+$("ed-status").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && selectedId) { patchTask(selectedId, { status: b.dataset.v, done: b.dataset.v === "done" }); poke(nodes.get(selectedId), 0.16); } });
+$("ed-link").onclick = () => { if (!selectedId) return; pendingLinkFrom = pendingLinkFrom ? null : selectedId; updateLinkButton(); };
+$("ed-del").onclick = () => { $("ed-confirm").hidden = false; };
+$("ed-del-no").onclick = () => { $("ed-confirm").hidden = true; };
+$("ed-del-yes").onclick = () => { if (selectedId) removeTask(selectedId); };
+$("linkbar-del").onclick = () => { if (selectedLinkId) removeLink(selectedLinkId); };
+$("linkbar-close").onclick = () => selectLink(null);
+$("bulk-del").onclick = bulkDelete;
+$("bulk-close").onclick = clearMulti;
+
+/* ---------- boot ---------- */
+let loaded = { tasks: false, links: false, zones: false }, firstFit = false;
+function afterLoad() {
+  if (!loaded.tasks || !loaded.links || !loaded.zones) return;
+  if (mode === "loading") mode = "db";
+  if (!firstFit) { firstFit = true; fitView(true); }
+  uiChanged();
+}
+function startLocal() {
+  mode = "local";
+  let d = null;
+  try { const raw = localStorage.getItem(LS_KEY); if (raw) d = JSON.parse(raw); } catch (e) {}
+  const seed = window.TASK_CLOUD_SEED;
+  if (!d && seed) d = seed;
+  else if (d && seed) { const byId = new Map((seed.tasks || []).map((t) => [t.id, t])); (d.tasks || []).forEach((t) => { const st = byId.get(t.id); if (st && !t.project && st.project) t.project = st.project; }); }
+  if (d) { (d.tasks || []).forEach((t) => applyTask(t.id, t)); (d.links || []).forEach((l) => applyLink(l.id, l)); (d.zones || []).forEach((z) => applyZone(z.id, z)); }
+  fitView(true); uiChanged();
+  pullInbox(seed);
+}
+// inbox.json next to the page holds tasks added from outside; each id is added once, so a deleted task never comes back
+const SEEN_KEY = "task-cloud-seen";
+async function pullInbox(seed) {
+  let seen;
+  try { seen = new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || "null") || [...nodes.keys(), ...((seed && seed.tasks) || []).map((t) => t.id)]); } catch (e) { return; }
+  let inbox = null;
+  try { const r = await fetch("inbox.json", { cache: "no-store" }); if (r.ok) inbox = await r.json(); } catch (e) {}
+  let added = 0;
+  if (inbox) {
+    for (const t of inbox.tasks || []) if (t.id && !seen.has(t.id) && !nodes.has(t.id)) { applyTask(t.id, t); poke(nodes.get(t.id), 0.15); seen.add(t.id); added++; }
+    for (const z of inbox.zones || []) if (z.id && !seen.has(z.id) && !zones.has(z.id)) { applyZone(z.id, z); seen.add(z.id); added++; }
+    for (const l of inbox.links || []) if (l.id && !seen.has(l.id) && !links.has(l.id) && nodes.has(l.from) && nodes.has(l.to)) { applyLink(l.id, l); seen.add(l.id); }
+  }
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify([...seen])); } catch (e) {}
+  if (added) { persistLocal(); toast(`Added ${added} new item${added > 1 ? "s" : ""}.`); }
+}
+async function init() {
+  $("empty").hidden = false;
+  let api = null;
+  try { api = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { api = null; }
+  if (!api) { startLocal(); return; }
+  db = api;
+  try { const user = await window.claude.use("user"); if (user && user.can) { const ok = await user.can("data.write"); if (ok === false) setReadOnly(true); } } catch (e) {}
+  const lost = () => toast("Live updates stopped. Reload the page to reconnect.", true);
+  db.collection("tasks").onSnapshot((snap) => {
+    for (const ch of snap.docChanges()) { if (ch.type === "removed") dropTask(ch.doc.id); else applyTask(ch.doc.id, ch.doc.data() || {}); }
+    loaded.tasks = true; afterLoad();
+  }, lost);
+  db.collection("links").onSnapshot((snap) => {
+    for (const ch of snap.docChanges()) { if (ch.type === "removed") dropLink(ch.doc.id); else applyLink(ch.doc.id, ch.doc.data() || {}); }
+    loaded.links = true; afterLoad();
+  }, lost);
+  db.collection("zones").onSnapshot((snap) => {
+    for (const ch of snap.docChanges()) { if (ch.type === "removed") dropZone(ch.doc.id); else applyZone(ch.doc.id, ch.doc.data() || {}); }
+    loaded.zones = true; afterLoad();
+  }, lost);
+}
+let last = performance.now(), acc = 0;
+function frame(now) {
+  acc += Math.min(0.05, (now - last) / 1000); last = now;
+  while (acc >= 1 / 60) { step(1 / 60); acc -= 1 / 60; }
+  updateCamera(); draw(); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+init();
+})();
+</script>
+
+</body>
+</html>
